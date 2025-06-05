@@ -36,8 +36,9 @@
 + 🔄 Unreal Basic Review  
 
 ## Project
-+ [AI] **NoneStory** - 90%  
-Language Learning X Test-oriented X Large Language Model  
++ 90% / **NoneStory** / 📚 × 📝 × 🤖  
+```[AI] Language Learning X Test-oriented X Large Language Model```
+
 + [VR] **Riku's Interaction Lab**
 + [VR] **Riku's Game Center**
 + [unity] **Internet War**
