@@ -36,21 +36,27 @@
 + 🔄 Unreal Basic Review  
 
 ## Project
-+ [AI] NoneStory - 90%  
++ [AI] **NoneStory** - 90%  
 Language Learning X Test-oriented X Large Language Model  
 
-+ [unity] 互联网的战争
-+ [unreal] 无法触碰的樱花树
++ [unity] **Internet War**
 
 ## 📅 DevPlan
-+ [unity] VR键盘工具包
-+ [unity] 土拨鼠的战争
-+ [unity] 阿尔卡纳
-+ [unreal] 音乐沉浸视频
-+ [three js] 自我介绍网站
-+ [unity] 自动化结合
-+ [unreal] 虚拟视频拍摄
-+ [three js]商业可视化erp
+<details>
+<summary> CH / Click to expand</summary>
++ [unity] 互联网的战争<br>
++ [3D Visualization] ???<br>  
+Large-scale Spatial Computing X Data Processing & Interaction X Financial Model Visualization<br>  
++ [unity] VR键盘工具包<br>  
++ [unity] 土拨鼠的战争<br>  
++ [unity] 阿尔卡纳<br>  
++ [unreal] 音乐沉浸视频<br> 
++ [three js] 自我介绍网站<br>  
++ [unity] 自动化结合<br>  
++ [unreal] 虚拟视频拍摄<br>  
++ [unreal] 无法触碰的樱花树<br>
+</details>
+
 
 
 <!--
