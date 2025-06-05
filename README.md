@@ -31,16 +31,16 @@
 ## RoadMap
 + ✅ Unity Basic Review  
   +  (UniRX UniTask LinQ)
-+ 🔄 VR开发学习
-+ 🚧 VR相关开发实践
++ 🔄 VR Development Study
++ 🚧 VR-Related Development Practice
 + 🔄 Unreal Basic Review  
 
 ## Project
 + [AI] **NoneStory** - 90%  
 Language Learning X Test-oriented X Large Language Model  
-
++ [VR] **Riku's Interaction Lab**
++ [VR] **Riku's Game Center**
 + [unity] **Internet War**
-
 ## 📅 DevPlan
 <details>
 <summary> CH / Click to expand</summary>
