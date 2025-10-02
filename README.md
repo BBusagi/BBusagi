@@ -36,12 +36,15 @@
 + 🔄 Unreal Basic Review  
 
 ## Project
+1. [2DxAI]VN游戏demo 放置类模拟经营 放置类Q版横板动作游戏
+   
+2. [3DxXR]xr 射击游戏（vr+ar+hic创新）
+   
+3. [Graphics Rendering x Distributed System Design]图形渲染 分布式设计作品
+
 + 90% / **NoneStory** / 📚 × 📝 × 🤖  
 ```[AI] Language Learning X Test-oriented X Large Language Model```
 
-+ [VR] **Riku's Interaction Lab**
-+ [VR] **Riku's Game Center**
-+ [unity] **Internet War**
 ## 📅 DevPlan
 <details>
 <summary> CH / Click to expand</summary>
