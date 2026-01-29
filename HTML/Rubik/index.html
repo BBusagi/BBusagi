@@ -30,10 +30,27 @@
         opacity: 0.7;
         user-select: none;
       }
+      #reset-btn {
+        position: fixed;
+        left: 16px;
+        top: 16px;
+        padding: 8px 14px;
+        border-radius: 10px;
+        border: 1px solid #3b4250;
+        background: #3a404b;
+        color: #eef2f7;
+        font-size: 13px;
+        cursor: pointer;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+      }
+      #reset-btn:hover {
+        background: #4a5160;
+      }
     </style>
   </head>
   <body>
     <div id="app"></div>
+    <button id="reset-btn" type="button">重置</button>
     <div class="hint">点击小格切换：默认 → O → X，拖动旋转，滚轮缩放</div>
 
     <script type="importmap">
@@ -372,6 +389,13 @@
       }
 
       renderer.domElement.addEventListener("pointerdown", onPointerDown);
+      const resetBtn = document.getElementById("reset-btn");
+      resetBtn.addEventListener("click", () => {
+        for (const key of Object.keys(FACE_STATE)) {
+          FACE_STATE[key].fill(0);
+        }
+        redrawFaces(new Set(Object.keys(faceTextures)));
+      });
 
       function onResize() {
         camera.aspect = window.innerWidth / window.innerHeight;
