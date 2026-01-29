@@ -24,6 +24,13 @@
     <div id="app"></div>
     <button id="reset-btn" type="button">重置</button>
     <div class="hint">点击小格切换：默认 → O → X，拖动旋转，滚轮缩放</div>
+    <div id="result-modal" class="result-modal hidden" aria-live="polite">
+      <div class="result-card" role="dialog" aria-modal="true" aria-labelledby="result-title">
+        <div id="result-title" class="result-title">游戏结束</div>
+        <div id="result-text" class="result-text">—</div>
+        <button id="result-reset-btn" class="result-btn" type="button">重置</button>
+      </div>
+    </div>
 
     <script type="importmap">
       {
