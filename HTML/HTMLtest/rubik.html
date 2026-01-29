@@ -99,17 +99,6 @@
         R: [FACE.R, FACE.R, FACE.R, FACE.R, FACE.R, FACE.R, FACE.R, FACE.R, FACE.R],
       };
 
-      function roundRect(ctx, x, y, w, h, r) {
-        const radius = Math.min(r, w / 2, h / 2);
-        ctx.beginPath();
-        ctx.moveTo(x + radius, y);
-        ctx.arcTo(x + w, y, x + w, y + h, radius);
-        ctx.arcTo(x + w, y + h, x, y + h, radius);
-        ctx.arcTo(x, y + h, x, y, radius);
-        ctx.arcTo(x, y, x + w, y, radius);
-        ctx.closePath();
-      }
-
       const TEX_SIZE = 512;
       const TEX_PAD = 36;
       const TEX_GAP = 18;
@@ -124,6 +113,123 @@
         L: Array(9).fill(0),
         R: Array(9).fill(0),
       };
+
+      const CORNER_GROUPS = [
+        [
+          ["U", 8],
+          ["R", 0],
+          ["F", 2],
+        ],
+        [
+          ["U", 6],
+          ["L", 2],
+          ["F", 0],
+        ],
+        [
+          ["U", 0],
+          ["L", 0],
+          ["B", 2],
+        ],
+        [
+          ["U", 2],
+          ["R", 2],
+          ["B", 0],
+        ],
+        [
+          ["D", 2],
+          ["R", 6],
+          ["F", 8],
+        ],
+        [
+          ["D", 0],
+          ["L", 8],
+          ["F", 6],
+        ],
+        [
+          ["D", 6],
+          ["L", 6],
+          ["B", 8],
+        ],
+        [
+          ["D", 8],
+          ["R", 8],
+          ["B", 6],
+        ],
+      ];
+
+      const EDGE_GROUPS = [
+        [
+          ["U", 7],
+          ["F", 1],
+        ],
+        [
+          ["U", 5],
+          ["R", 1],
+        ],
+        [
+          ["U", 1],
+          ["B", 1],
+        ],
+        [
+          ["U", 3],
+          ["L", 1],
+        ],
+        [
+          ["D", 1],
+          ["F", 7],
+        ],
+        [
+          ["D", 5],
+          ["R", 7],
+        ],
+        [
+          ["D", 7],
+          ["B", 7],
+        ],
+        [
+          ["D", 3],
+          ["L", 7],
+        ],
+        [
+          ["F", 5],
+          ["R", 3],
+        ],
+        [
+          ["F", 3],
+          ["L", 5],
+        ],
+        [
+          ["B", 3],
+          ["R", 5],
+        ],
+        [
+          ["B", 5],
+          ["L", 3],
+        ],
+      ];
+
+      function buildLinkMap(groups) {
+        const map = new Map();
+        for (const group of groups) {
+          for (const [faceKey, idx] of group) {
+            map.set(`${faceKey}-${idx}`, group);
+          }
+        }
+        return map;
+      }
+
+      const LINK_MAP = buildLinkMap([...CORNER_GROUPS, ...EDGE_GROUPS]);
+
+      function roundRect(ctx, x, y, w, h, r) {
+        const radius = Math.min(r, w / 2, h / 2);
+        ctx.beginPath();
+        ctx.moveTo(x + radius, y);
+        ctx.arcTo(x + w, y, x + w, y + h, radius);
+        ctx.arcTo(x + w, y + h, x, y + h, radius);
+        ctx.arcTo(x, y + h, x, y, radius);
+        ctx.arcTo(x, y, x + w, y, radius);
+        ctx.closePath();
+      }
 
       function drawFace(ctx, faceKey) {
         ctx.clearRect(0, 0, TEX_SIZE, TEX_SIZE);
@@ -181,6 +287,14 @@
         texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
         texture.needsUpdate = true;
         return { canvas, ctx, texture, faceKey };
+      }
+
+      function redrawFaces(faceKeys) {
+        for (const key of faceKeys) {
+          const faceTex = faceTextures[key];
+          drawFace(faceTex.ctx, key);
+          faceTex.texture.needsUpdate = true;
+        }
       }
 
       const faceTextures = {};
@@ -242,10 +356,19 @@
         if (idx === null) return;
 
         const state = FACE_STATE[faceKey][idx];
-        FACE_STATE[faceKey][idx] = (state + 1) % 3;
-        const faceTex = faceTextures[faceKey];
-        drawFace(faceTex.ctx, faceKey);
-        faceTex.texture.needsUpdate = true;
+        const nextState = (state + 1) % 3;
+        const group = LINK_MAP.get(`${faceKey}-${idx}`);
+        if (group) {
+          const facesToRedraw = new Set();
+          for (const [f, i] of group) {
+            FACE_STATE[f][i] = nextState;
+            facesToRedraw.add(f);
+          }
+          redrawFaces(facesToRedraw);
+        } else {
+          FACE_STATE[faceKey][idx] = nextState;
+          redrawFaces(new Set([faceKey]));
+        }
       }
 
       renderer.domElement.addEventListener("pointerdown", onPointerDown);
