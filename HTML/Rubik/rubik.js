@@ -239,10 +239,13 @@ function getStickerIndexFromUV(uv) {
   return null;
 }
 
-export function initRubikGame({ mount, resetButton, onTurnChange }) {
+export function initRubikGame({ mount, resetButton, onTurnChange, onScoreChange, onGameEnd, onReset }) {
   if (!mount) throw new Error("Missing mount element");
   let currentPlayerState = 1;
   if (onTurnChange) onTurnChange(currentPlayerState);
+  let gameOver = false;
+  const scores = { 1: 0, 2: 0 };
+  const scoredLines = new Set();
 
   const scene = new THREE.Scene();
   scene.fog = new THREE.Fog(CONFIG.fog.color, CONFIG.fog.near, CONFIG.fog.far);
@@ -319,7 +322,47 @@ export function initRubikGame({ mount, resetButton, onTurnChange }) {
     }
   }
 
+  const LINES = [
+    [0, 1, 2],
+    [3, 4, 5],
+    [6, 7, 8],
+    [0, 3, 6],
+    [1, 4, 7],
+    [2, 5, 8],
+    [0, 4, 8],
+    [2, 4, 6],
+  ];
+
+  function updateScoresForFace(faceKey) {
+    const state = faceState[faceKey];
+    let changed = false;
+    for (let lineIndex = 0; lineIndex < LINES.length; lineIndex++) {
+      const [a, b, c] = LINES[lineIndex];
+      const v = state[a];
+      if (v === 0) continue;
+      if (v === state[b] && v === state[c]) {
+        const key = `${faceKey}-${lineIndex}-${v}`;
+        if (!scoredLines.has(key)) {
+          scoredLines.add(key);
+          scores[v] += 1;
+          changed = true;
+        }
+      }
+    }
+    if (changed && onScoreChange) {
+      onScoreChange({ o: scores[1], x: scores[2] });
+    }
+  }
+
+  function isBoardFull() {
+    for (const key of Object.keys(faceState)) {
+      if (faceState[key].includes(0)) return false;
+    }
+    return true;
+  }
+
   function handlePointerDown(event) {
+    if (gameOver) return;
     const rect = renderer.domElement.getBoundingClientRect();
     pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -336,25 +379,37 @@ export function initRubikGame({ mount, resetButton, onTurnChange }) {
     if (idx === null) return;
 
     const group = LINK_MAP.get(`${faceKey}-${idx}`);
+    let facesToRedraw;
     if (group) {
       for (const [f, i] of group) {
         if (faceState[f][i] !== 0) return;
       }
-      const facesToRedraw = new Set();
+      facesToRedraw = new Set();
       for (const [f, i] of group) {
         faceState[f][i] = currentPlayerState;
         facesToRedraw.add(f);
       }
       redrawFaces(facesToRedraw);
-      currentPlayerState = currentPlayerState === 1 ? 2 : 1;
-      if (onTurnChange) onTurnChange(currentPlayerState);
+      for (const f of facesToRedraw) updateScoresForFace(f);
     } else {
       if (faceState[faceKey][idx] !== 0) return;
       faceState[faceKey][idx] = currentPlayerState;
-      redrawFaces(new Set([faceKey]));
-      currentPlayerState = currentPlayerState === 1 ? 2 : 1;
-      if (onTurnChange) onTurnChange(currentPlayerState);
+      facesToRedraw = new Set([faceKey]);
+      redrawFaces(facesToRedraw);
+      updateScoresForFace(faceKey);
     }
+
+    if (isBoardFull()) {
+      gameOver = true;
+      if (onGameEnd) {
+        const winner = scores[1] === scores[2] ? 0 : scores[1] > scores[2] ? 1 : 2;
+        onGameEnd({ winner, scores: { o: scores[1], x: scores[2] } });
+      }
+      return;
+    }
+
+    currentPlayerState = currentPlayerState === 1 ? 2 : 1;
+    if (onTurnChange) onTurnChange(currentPlayerState);
   }
 
   function handleResize() {
@@ -380,7 +435,13 @@ export function initRubikGame({ mount, resetButton, onTurnChange }) {
       }
       redrawFaces(new Set(Object.keys(faceTextures)));
       currentPlayerState = 1;
+      gameOver = false;
+      scoredLines.clear();
+      scores[1] = 0;
+      scores[2] = 0;
+      if (onScoreChange) onScoreChange({ o: 0, x: 0 });
       if (onTurnChange) onTurnChange(currentPlayerState);
+      if (onReset) onReset();
     });
   }
 
