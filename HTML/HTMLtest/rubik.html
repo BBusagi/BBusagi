@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rubik 3D 3x3</title>
+    <style>
+      :root {
+        --bg: #2b2f36;
+        --fg: #e6edf3;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: radial-gradient(1200px 800px at 20% 10%, #3a3f48, #2b2f36 60%);
+        color: var(--fg);
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+      #app {
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+      }
+      .hint {
+        position: fixed;
+        left: 16px;
+        bottom: 12px;
+        font-size: 12px;
+        opacity: 0.7;
+        user-select: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <div class="hint">拖动旋转，滚轮缩放</div>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+      }
+    </script>
+    <script type="module">
+      import * as THREE from "three";
+      import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+      const app = document.getElementById("app");
+
+      const scene = new THREE.Scene();
+      scene.fog = new THREE.Fog(0x0b0f14, 6, 18);
+
+      const camera = new THREE.PerspectiveCamera(
+        45,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        100
+      );
+      camera.position.set(5, 4, 6);
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      app.appendChild(renderer.domElement);
+
+      const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+      scene.add(ambient);
+
+      const key = new THREE.DirectionalLight(0xffffff, 0.9);
+      key.position.set(5, 6, 3);
+      scene.add(key);
+
+      const fill = new THREE.DirectionalLight(0xffffff, 0.4);
+      fill.position.set(-5, -2, -4);
+      scene.add(fill);
+
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.08;
+
+      const FACE = {
+        U: "#ffffff",
+        D: "#ffd500",
+        F: "#00a651",
+        B: "#0047ab",
+        L: "#ff5800",
+        R: "#c41e3a",
+      };
+
+      const FACE_STICKERS = {
+        U: [FACE.U, FACE.U, FACE.U, FACE.U, FACE.U, FACE.U, FACE.U, FACE.U, FACE.U],
+        D: [FACE.D, FACE.D, FACE.D, FACE.D, FACE.D, FACE.D, FACE.D, FACE.D, FACE.D],
+        F: [FACE.F, FACE.F, FACE.F, FACE.F, FACE.F, FACE.F, FACE.F, FACE.F, FACE.F],
+        B: [FACE.B, FACE.B, FACE.B, FACE.B, FACE.B, FACE.B, FACE.B, FACE.B, FACE.B],
+        L: [FACE.L, FACE.L, FACE.L, FACE.L, FACE.L, FACE.L, FACE.L, FACE.L, FACE.L],
+        R: [FACE.R, FACE.R, FACE.R, FACE.R, FACE.R, FACE.R, FACE.R, FACE.R, FACE.R],
+      };
+
+      function roundRect(ctx, x, y, w, h, r) {
+        const radius = Math.min(r, w / 2, h / 2);
+        ctx.beginPath();
+        ctx.moveTo(x + radius, y);
+        ctx.arcTo(x + w, y, x + w, y + h, radius);
+        ctx.arcTo(x + w, y + h, x, y + h, radius);
+        ctx.arcTo(x, y + h, x, y, radius);
+        ctx.arcTo(x, y, x + w, y, radius);
+        ctx.closePath();
+      }
+
+      function makeFaceTexture(stickers) {
+        const size = 512;
+        const pad = 36;
+        const gap = 18;
+        const cell = (size - pad * 2 - gap * 2) / 3;
+        const canvas = document.createElement("canvas");
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext("2d");
+
+        ctx.fillStyle = "#1b2230";
+        ctx.fillRect(0, 0, size, size);
+
+        ctx.fillStyle = "#2a2f38";
+        roundRect(ctx, pad, pad, size - pad * 2, size - pad * 2, 28);
+        ctx.fill();
+
+        for (let y = 0; y < 3; y++) {
+          for (let x = 0; x < 3; x++) {
+            const cx = pad + x * (cell + gap);
+            const cy = pad + y * (cell + gap);
+            const idx = y * 3 + x;
+            ctx.fillStyle = stickers[idx];
+            roundRect(ctx, cx, cy, cell, cell, 18);
+            ctx.fill();
+            ctx.strokeStyle = "#1c2330";
+            ctx.lineWidth = 6;
+            ctx.stroke();
+          }
+        }
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+        texture.needsUpdate = true;
+        return texture;
+      }
+
+      const materials = [
+        new THREE.MeshStandardMaterial({ map: makeFaceTexture(FACE_STICKERS.R) }), // +X
+        new THREE.MeshStandardMaterial({ map: makeFaceTexture(FACE_STICKERS.L) }), // -X
+        new THREE.MeshStandardMaterial({ map: makeFaceTexture(FACE_STICKERS.U) }), // +Y
+        new THREE.MeshStandardMaterial({ map: makeFaceTexture(FACE_STICKERS.D) }), // -Y
+        new THREE.MeshStandardMaterial({ map: makeFaceTexture(FACE_STICKERS.F) }), // +Z
+        new THREE.MeshStandardMaterial({ map: makeFaceTexture(FACE_STICKERS.B) }), // -Z
+      ];
+
+      const cube = new THREE.Mesh(new THREE.BoxGeometry(3, 3, 3), materials);
+      cube.castShadow = true;
+      cube.receiveShadow = true;
+      scene.add(cube);
+
+      const rim = new THREE.Mesh(
+        new THREE.BoxGeometry(3.04, 3.04, 3.04),
+        new THREE.MeshStandardMaterial({
+          color: 0x0b0f14,
+          metalness: 0.05,
+          roughness: 0.8,
+          opacity: 0.35,
+          transparent: true,
+        })
+      );
+      scene.add(rim);
+
+      function onResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      }
+      window.addEventListener("resize", onResize);
+
+      function animate() {
+        requestAnimationFrame(animate);
+        cube.rotation.y += 0.002;
+        cube.rotation.x += 0.001;
+        rim.rotation.copy(cube.rotation);
+        controls.update();
+        renderer.render(scene, camera);
+      }
+      animate();
+    </script>
+  </body>
+</html>
