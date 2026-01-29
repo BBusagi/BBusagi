@@ -57,6 +57,22 @@ body {
 .score-pill.active .marker {
   opacity: 1;
   transform: translateX(0);
+  animation: marker-pulse 0.9s ease-in-out infinite;
+}
+
+@keyframes marker-pulse {
+  0% {
+    transform: translateX(0) scale(1);
+    color: #aab4c3;
+  }
+  50% {
+    transform: translateX(0) scale(1.18);
+    color: #e8f1ff;
+  }
+  100% {
+    transform: translateX(0) scale(1);
+    color: #aab4c3;
+  }
 }
 #app {
   width: 100vw;
