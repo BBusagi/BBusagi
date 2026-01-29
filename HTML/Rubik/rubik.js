@@ -239,9 +239,10 @@ function getStickerIndexFromUV(uv) {
   return null;
 }
 
-export function initRubikGame({ mount, resetButton }) {
+export function initRubikGame({ mount, resetButton, onTurnChange }) {
   if (!mount) throw new Error("Missing mount element");
   let currentPlayerState = 1;
+  if (onTurnChange) onTurnChange(currentPlayerState);
 
   const scene = new THREE.Scene();
   scene.fog = new THREE.Fog(CONFIG.fog.color, CONFIG.fog.near, CONFIG.fog.far);
@@ -346,11 +347,13 @@ export function initRubikGame({ mount, resetButton }) {
       }
       redrawFaces(facesToRedraw);
       currentPlayerState = currentPlayerState === 1 ? 2 : 1;
+      if (onTurnChange) onTurnChange(currentPlayerState);
     } else {
       if (faceState[faceKey][idx] !== 0) return;
       faceState[faceKey][idx] = currentPlayerState;
       redrawFaces(new Set([faceKey]));
       currentPlayerState = currentPlayerState === 1 ? 2 : 1;
+      if (onTurnChange) onTurnChange(currentPlayerState);
     }
   }
 
@@ -377,6 +380,7 @@ export function initRubikGame({ mount, resetButton }) {
       }
       redrawFaces(new Set(Object.keys(faceTextures)));
       currentPlayerState = 1;
+      if (onTurnChange) onTurnChange(currentPlayerState);
     });
   }
 

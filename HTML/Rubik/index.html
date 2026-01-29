@@ -7,6 +7,20 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
+    <div class="score-panel">
+      <div class="score-bar">
+        <div class="score-pill" id="o-player">
+          <span class="marker">▶</span>
+          <span class="label">O 玩家</span>
+          <span id="o-score" class="value">0</span>
+        </div>
+        <div class="score-pill" id="x-player">
+          <span class="marker">▶</span>
+          <span class="label">X 玩家</span>
+          <span id="x-score" class="value">0</span>
+        </div>
+      </div>
+    </div>
     <div id="app"></div>
     <button id="reset-btn" type="button">重置</button>
     <div class="hint">点击小格切换：默认 → O → X，拖动旋转，滚轮缩放</div>
