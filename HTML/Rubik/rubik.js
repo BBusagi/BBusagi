@@ -1,24 +1,18 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
-const CONFIG = {
-  fog: { color: 0x0b0f14, near: 6, far: 18 },
-  camera: { fov: 45, near: 0.1, far: 100, position: [5, 4, 6] },
-  renderer: { antialias: true, maxPixelRatio: 2 },
-  lighting: {
-    ambient: { color: 0xffffff, intensity: 0.6 },
-    key: { color: 0xffffff, intensity: 0.9, position: [5, 6, 3] },
-    fill: { color: 0xffffff, intensity: 0.4, position: [-5, -2, -4] },
-  },
-  cube: { size: 3, rimSize: 3.04 },
-  texture: { size: 512, pad: 36, gap: 18, cellRadius: 18, frameRadius: 28 },
-  marks: {
-    oColor: "#7dff9b",
-    xColor: "#ff7a8c",
-    strokeWidth: 10,
-    oScale: 0.32,
-    xMarginScale: 0.28,
-  },
+const CFG = {
+  fog: [0x0b0f14, 6, 18],
+  cam: [45, 0.1, 100, 5, 4, 6],
+  lights: [
+    [0xffffff, 0.6, 0, 0, 0],
+    [0xffffff, 0.9, 5, 6, 3],
+    [0xffffff, 0.4, -5, -2, -4],
+  ],
+  cube: [3, 3.04],
+  tex: [512, 36, 18, 18, 28],
+  marks: { o: "#7dff9b", x: "#ff7a8c", w: 10, oScale: 0.32, xGap: 0.28 },
+  ui: { bg: "#1b2230", panel: "#2a2f38", border: "#1c2330" },
   colors: {
     U: "#ffffff",
     D: "#ffd500",
@@ -27,379 +21,230 @@ const CONFIG = {
     L: "#ff5800",
     R: "#c41e3a",
   },
-  ui: {
-    bg: "#1b2230",
-    panel: "#2a2f38",
-    border: "#1c2330",
-  },
 };
 
-const FACE_ORDER = ["R", "L", "U", "D", "F", "B"];
-const FACE_STICKERS = {
-  U: Array(9).fill(CONFIG.colors.U),
-  D: Array(9).fill(CONFIG.colors.D),
-  F: Array(9).fill(CONFIG.colors.F),
-  B: Array(9).fill(CONFIG.colors.B),
-  L: Array(9).fill(CONFIG.colors.L),
-  R: Array(9).fill(CONFIG.colors.R),
-};
-
-const CORNER_GROUPS = [
-  [
-    ["U", 8],
-    ["R", 0],
-    ["F", 2],
-  ],
-  [
-    ["U", 6],
-    ["L", 2],
-    ["F", 0],
-  ],
-  [
-    ["U", 0],
-    ["L", 0],
-    ["B", 2],
-  ],
-  [
-    ["U", 2],
-    ["R", 2],
-    ["B", 0],
-  ],
-  [
-    ["D", 2],
-    ["R", 6],
-    ["F", 8],
-  ],
-  [
-    ["D", 0],
-    ["L", 8],
-    ["F", 6],
-  ],
-  [
-    ["D", 6],
-    ["L", 6],
-    ["B", 8],
-  ],
-  [
-    ["D", 8],
-    ["R", 8],
-    ["B", 6],
-  ],
+const ORDER = ["R", "L", "U", "D", "F", "B"];
+const LINES = [
+  [0, 1, 2],
+  [3, 4, 5],
+  [6, 7, 8],
+  [0, 3, 6],
+  [1, 4, 7],
+  [2, 5, 8],
+  [0, 4, 8],
+  [2, 4, 6],
+];
+const GROUPS = [
+  [["U", 8], ["R", 0], ["F", 2]],
+  [["U", 6], ["L", 2], ["F", 0]],
+  [["U", 0], ["L", 0], ["B", 2]],
+  [["U", 2], ["R", 2], ["B", 0]],
+  [["D", 2], ["R", 6], ["F", 8]],
+  [["D", 0], ["L", 8], ["F", 6]],
+  [["D", 6], ["L", 6], ["B", 8]],
+  [["D", 8], ["R", 8], ["B", 6]],
+  [["U", 7], ["F", 1]],
+  [["U", 5], ["R", 1]],
+  [["U", 1], ["B", 1]],
+  [["U", 3], ["L", 1]],
+  [["D", 1], ["F", 7]],
+  [["D", 5], ["R", 7]],
+  [["D", 7], ["B", 7]],
+  [["D", 3], ["L", 7]],
+  [["F", 5], ["R", 3]],
+  [["F", 3], ["L", 5]],
+  [["B", 3], ["R", 5]],
+  [["B", 5], ["L", 3]],
 ];
 
-const EDGE_GROUPS = [
-  [
-    ["U", 7],
-    ["F", 1],
-  ],
-  [
-    ["U", 5],
-    ["R", 1],
-  ],
-  [
-    ["U", 1],
-    ["B", 1],
-  ],
-  [
-    ["U", 3],
-    ["L", 1],
-  ],
-  [
-    ["D", 1],
-    ["F", 7],
-  ],
-  [
-    ["D", 5],
-    ["R", 7],
-  ],
-  [
-    ["D", 7],
-    ["B", 7],
-  ],
-  [
-    ["D", 3],
-    ["L", 7],
-  ],
-  [
-    ["F", 5],
-    ["R", 3],
-  ],
-  [
-    ["F", 3],
-    ["L", 5],
-  ],
-  [
-    ["B", 3],
-    ["R", 5],
-  ],
-  [
-    ["B", 5],
-    ["L", 3],
-  ],
-];
+const STICKERS = Object.fromEntries(
+  Object.entries(CFG.colors).map(([k, v]) => [k, Array(9).fill(v)])
+);
 
-function buildLinkMap(groups) {
-  const map = new Map();
-  for (const group of groups) {
-    for (const [faceKey, idx] of group) {
-      map.set(`${faceKey}-${idx}`, group);
-    }
-  }
-  return map;
-}
+const LINK = (() => {
+  const m = new Map();
+  for (const g of GROUPS) for (const [f, i] of g) m.set(`${f}-${i}`, g);
+  return m;
+})();
 
-const LINK_MAP = buildLinkMap([...CORNER_GROUPS, ...EDGE_GROUPS]);
-
-function roundRect(ctx, x, y, w, h, r) {
-  const radius = Math.min(r, w / 2, h / 2);
+const rr = (ctx, x, y, w, h, r) => {
+  const R = Math.min(r, w / 2, h / 2);
   ctx.beginPath();
-  ctx.moveTo(x + radius, y);
-  ctx.arcTo(x + w, y, x + w, y + h, radius);
-  ctx.arcTo(x + w, y + h, x, y + h, radius);
-  ctx.arcTo(x, y + h, x, y, radius);
-  ctx.arcTo(x, y, x + w, y, radius);
+  ctx.moveTo(x + R, y);
+  ctx.arcTo(x + w, y, x + w, y + h, R);
+  ctx.arcTo(x + w, y + h, x, y + h, R);
+  ctx.arcTo(x, y + h, x, y, R);
+  ctx.arcTo(x, y, x + w, y, R);
   ctx.closePath();
-}
-
-function drawFace(ctx, faceKey, faceState) {
-  const { size, pad, gap, cellRadius, frameRadius } = CONFIG.texture;
-  const cell = (size - pad * 2 - gap * 2) / 3;
-  ctx.clearRect(0, 0, size, size);
-  ctx.fillStyle = CONFIG.ui.bg;
-  ctx.fillRect(0, 0, size, size);
-
-  ctx.fillStyle = CONFIG.ui.panel;
-  roundRect(ctx, pad, pad, size - pad * 2, size - pad * 2, frameRadius);
-  ctx.fill();
-
-  for (let y = 0; y < 3; y++) {
-    for (let x = 0; x < 3; x++) {
-      const cx = pad + x * (cell + gap);
-      const cy = pad + y * (cell + gap);
-      const idx = y * 3 + x;
-      ctx.fillStyle = FACE_STICKERS[faceKey][idx];
-      roundRect(ctx, cx, cy, cell, cell, cellRadius);
-      ctx.fill();
-      ctx.strokeStyle = CONFIG.ui.border;
-      ctx.lineWidth = 6;
-      ctx.stroke();
-
-      const state = faceState[idx];
-      if (state === 1) {
-        const r = cell * CONFIG.marks.oScale;
-        const ox = cx + cell / 2;
-        const oy = cy + cell / 2;
-        ctx.strokeStyle = CONFIG.marks.oColor;
-        ctx.lineWidth = CONFIG.marks.strokeWidth;
-        ctx.beginPath();
-        ctx.arc(ox, oy, r, 0, Math.PI * 2);
-        ctx.stroke();
-      } else if (state === 2) {
-        const margin = cell * CONFIG.marks.xMarginScale;
-        ctx.strokeStyle = CONFIG.marks.xColor;
-        ctx.lineWidth = CONFIG.marks.strokeWidth;
-        ctx.beginPath();
-        ctx.moveTo(cx + margin, cy + margin);
-        ctx.lineTo(cx + cell - margin, cy + cell - margin);
-        ctx.moveTo(cx + cell - margin, cy + margin);
-        ctx.lineTo(cx + margin, cy + cell - margin);
-        ctx.stroke();
-      }
-    }
-  }
-}
-
-function createFaceTexture(faceKey, faceState, renderer) {
-  const { size } = CONFIG.texture;
-  const canvas = document.createElement("canvas");
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext("2d");
-  drawFace(ctx, faceKey, faceState);
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
-  texture.needsUpdate = true;
-  return { ctx, texture, faceKey };
-}
-
-function getStickerIndexFromUV(uv) {
-  const { size, pad, gap } = CONFIG.texture;
-  const cell = (size - pad * 2 - gap * 2) / 3;
-  const px = uv.x * size;
-  const py = (1 - uv.y) * size;
-  for (let y = 0; y < 3; y++) {
-    for (let x = 0; x < 3; x++) {
-      const cx = pad + x * (cell + gap);
-      const cy = pad + y * (cell + gap);
-      if (px >= cx && px <= cx + cell && py >= cy && py <= cy + cell) {
-        return y * 3 + x;
-      }
-    }
-  }
-  return null;
-}
+};
 
 export function initRubikGame({ mount, resetButton, onTurnChange, onScoreChange, onGameEnd, onReset }) {
   if (!mount) throw new Error("Missing mount element");
-  let currentPlayerState = 1;
-  if (onTurnChange) onTurnChange(currentPlayerState);
-  let gameOver = false;
+
+  const [texSize, pad, gap, cellR, frameR] = CFG.tex;
+  const cell = (texSize - pad * 2 - gap * 2) / 3;
+  const faceState = Object.fromEntries(ORDER.map((k) => [k, Array(9).fill(0)]));
   const scores = { 1: 0, 2: 0 };
-  const scoredLines = new Set();
+  const scored = new Set();
+  let current = 1;
+  let gameOver = false;
 
   const scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(CONFIG.fog.color, CONFIG.fog.near, CONFIG.fog.far);
+  scene.fog = new THREE.Fog(...CFG.fog);
 
-  const camera = new THREE.PerspectiveCamera(
-    CONFIG.camera.fov,
-    window.innerWidth / window.innerHeight,
-    CONFIG.camera.near,
-    CONFIG.camera.far
-  );
-  camera.position.set(...CONFIG.camera.position);
+  const camera = new THREE.PerspectiveCamera(CFG.cam[0], window.innerWidth / window.innerHeight, CFG.cam[1], CFG.cam[2]);
+  camera.position.set(CFG.cam[3], CFG.cam[4], CFG.cam[5]);
 
-  const renderer = new THREE.WebGLRenderer({ antialias: CONFIG.renderer.antialias });
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, CONFIG.renderer.maxPixelRatio));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   mount.appendChild(renderer.domElement);
 
-  const ambient = new THREE.AmbientLight(CONFIG.lighting.ambient.color, CONFIG.lighting.ambient.intensity);
-  scene.add(ambient);
-
-  const key = new THREE.DirectionalLight(CONFIG.lighting.key.color, CONFIG.lighting.key.intensity);
-  key.position.set(...CONFIG.lighting.key.position);
-  scene.add(key);
-
-  const fill = new THREE.DirectionalLight(CONFIG.lighting.fill.color, CONFIG.lighting.fill.intensity);
-  fill.position.set(...CONFIG.lighting.fill.position);
-  scene.add(fill);
+  for (const [c, i, x, y, z] of CFG.lights) {
+    const light = x === 0 && y === 0 && z === 0 ? new THREE.AmbientLight(c, i) : new THREE.DirectionalLight(c, i);
+    if (light.position) light.position.set(x, y, z);
+    scene.add(light);
+  }
 
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
 
-  const faceState = {
-    U: Array(9).fill(0),
-    D: Array(9).fill(0),
-    F: Array(9).fill(0),
-    B: Array(9).fill(0),
-    L: Array(9).fill(0),
-    R: Array(9).fill(0),
+  const drawFace = (ctx, key) => {
+    ctx.clearRect(0, 0, texSize, texSize);
+    ctx.fillStyle = CFG.ui.bg;
+    ctx.fillRect(0, 0, texSize, texSize);
+    ctx.fillStyle = CFG.ui.panel;
+    rr(ctx, pad, pad, texSize - pad * 2, texSize - pad * 2, frameR);
+    ctx.fill();
+
+    const state = faceState[key];
+    for (let y = 0; y < 3; y++) {
+      for (let x = 0; x < 3; x++) {
+        const idx = y * 3 + x;
+        const cx = pad + x * (cell + gap);
+        const cy = pad + y * (cell + gap);
+        ctx.fillStyle = STICKERS[key][idx];
+        rr(ctx, cx, cy, cell, cell, cellR);
+        ctx.fill();
+        ctx.strokeStyle = CFG.ui.border;
+        ctx.lineWidth = 6;
+        ctx.stroke();
+
+        const v = state[idx];
+        if (v === 1) {
+          ctx.strokeStyle = CFG.marks.o;
+          ctx.lineWidth = CFG.marks.w;
+          ctx.beginPath();
+          ctx.arc(cx + cell / 2, cy + cell / 2, cell * CFG.marks.oScale, 0, Math.PI * 2);
+          ctx.stroke();
+        } else if (v === 2) {
+          const m = cell * CFG.marks.xGap;
+          ctx.strokeStyle = CFG.marks.x;
+          ctx.lineWidth = CFG.marks.w;
+          ctx.beginPath();
+          ctx.moveTo(cx + m, cy + m);
+          ctx.lineTo(cx + cell - m, cy + cell - m);
+          ctx.moveTo(cx + cell - m, cy + m);
+          ctx.lineTo(cx + m, cy + cell - m);
+          ctx.stroke();
+        }
+      }
+    }
   };
 
   const faceTextures = {};
-  const materials = FACE_ORDER.map((key) => {
-    const faceTex = createFaceTexture(key, faceState[key], renderer);
-    faceTextures[key] = faceTex;
-    return new THREE.MeshStandardMaterial({ map: faceTex.texture });
+  const materials = ORDER.map((key) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = texSize;
+    canvas.height = texSize;
+    const ctx = canvas.getContext("2d");
+    drawFace(ctx, key);
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    texture.needsUpdate = true;
+    faceTextures[key] = { ctx, texture };
+    return new THREE.MeshStandardMaterial({ map: texture });
   });
 
-  const cube = new THREE.Mesh(new THREE.BoxGeometry(CONFIG.cube.size, CONFIG.cube.size, CONFIG.cube.size), materials);
-  cube.castShadow = true;
-  cube.receiveShadow = true;
+  const cube = new THREE.Mesh(new THREE.BoxGeometry(CFG.cube[0], CFG.cube[0], CFG.cube[0]), materials);
   scene.add(cube);
-
   const rim = new THREE.Mesh(
-    new THREE.BoxGeometry(CONFIG.cube.rimSize, CONFIG.cube.rimSize, CONFIG.cube.rimSize),
-    new THREE.MeshStandardMaterial({
-      color: 0x0b0f14,
-      metalness: 0.05,
-      roughness: 0.8,
-      opacity: 0.35,
-      transparent: true,
-    })
+    new THREE.BoxGeometry(CFG.cube[1], CFG.cube[1], CFG.cube[1]),
+    new THREE.MeshStandardMaterial({ color: 0x0b0f14, metalness: 0.05, roughness: 0.8, opacity: 0.35, transparent: true })
   );
   scene.add(rim);
 
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
 
-  function redrawFaces(faceKeys) {
-    for (const key of faceKeys) {
-      const faceTex = faceTextures[key];
-      drawFace(faceTex.ctx, key, faceState[key]);
-      faceTex.texture.needsUpdate = true;
+  const redraw = (keys) => {
+    for (const key of keys) {
+      drawFace(faceTextures[key].ctx, key);
+      faceTextures[key].texture.needsUpdate = true;
     }
-  }
+  };
 
-  const LINES = [
-    [0, 1, 2],
-    [3, 4, 5],
-    [6, 7, 8],
-    [0, 3, 6],
-    [1, 4, 7],
-    [2, 5, 8],
-    [0, 4, 8],
-    [2, 4, 6],
-  ];
-
-  function updateScoresForFace(faceKey) {
-    const state = faceState[faceKey];
+  const scoreFace = (key) => {
+    const state = faceState[key];
     let changed = false;
-    for (let lineIndex = 0; lineIndex < LINES.length; lineIndex++) {
-      const [a, b, c] = LINES[lineIndex];
+    for (let i = 0; i < LINES.length; i++) {
+      const [a, b, c] = LINES[i];
       const v = state[a];
-      if (v === 0) continue;
-      if (v === state[b] && v === state[c]) {
-        const key = `${faceKey}-${lineIndex}-${v}`;
-        if (!scoredLines.has(key)) {
-          scoredLines.add(key);
+      if (v && v === state[b] && v === state[c]) {
+        const tag = `${key}-${i}-${v}`;
+        if (!scored.has(tag)) {
+          scored.add(tag);
           scores[v] += 1;
           changed = true;
         }
       }
     }
-    if (changed && onScoreChange) {
-      onScoreChange({ o: scores[1], x: scores[2] });
-    }
-  }
+    if (changed && onScoreChange) onScoreChange({ o: scores[1], x: scores[2] });
+  };
 
-  function isBoardFull() {
-    for (const key of Object.keys(faceState)) {
-      if (faceState[key].includes(0)) return false;
-    }
-    return true;
-  }
+  const boardFull = () => ORDER.every((k) => !faceState[k].includes(0));
 
-  function handlePointerDown(event) {
+  const getIndexFromUV = (uv) => {
+    const px = uv.x * texSize;
+    const py = (1 - uv.y) * texSize;
+    for (let y = 0; y < 3; y++) {
+      for (let x = 0; x < 3; x++) {
+        const cx = pad + x * (cell + gap);
+        const cy = pad + y * (cell + gap);
+        if (px >= cx && px <= cx + cell && py >= cy && py <= cy + cell) return y * 3 + x;
+      }
+    }
+    return null;
+  };
+
+  const applyMove = (faceKey, idx) => {
+    const group = LINK.get(`${faceKey}-${idx}`);
+    const targets = group ?? [[faceKey, idx]];
+    for (const [f, i] of targets) if (faceState[f][i] !== 0) return null;
+    for (const [f, i] of targets) faceState[f][i] = current;
+    return new Set(targets.map(([f]) => f));
+  };
+
+  const onPointerDown = (event) => {
     if (gameOver) return;
     const rect = renderer.domElement.getBoundingClientRect();
     pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
     raycaster.setFromCamera(pointer, camera);
-    const hits = raycaster.intersectObject(cube, false);
-    if (!hits.length) return;
-    const hit = hits[0];
-    if (!hit.uv) return;
-    const faceIndex = hit.faceIndex ?? -1;
-    if (faceIndex < 0) return;
-    const side = Math.floor(faceIndex / 2);
-    const faceKey = FACE_ORDER[side];
-    const idx = getStickerIndexFromUV(hit.uv);
-    if (idx === null) return;
+    const hit = raycaster.intersectObject(cube, false)[0];
+    if (!hit?.uv || hit.faceIndex == null) return;
 
-    const group = LINK_MAP.get(`${faceKey}-${idx}`);
-    let facesToRedraw;
-    if (group) {
-      for (const [f, i] of group) {
-        if (faceState[f][i] !== 0) return;
-      }
-      facesToRedraw = new Set();
-      for (const [f, i] of group) {
-        faceState[f][i] = currentPlayerState;
-        facesToRedraw.add(f);
-      }
-      redrawFaces(facesToRedraw);
-      for (const f of facesToRedraw) updateScoresForFace(f);
-    } else {
-      if (faceState[faceKey][idx] !== 0) return;
-      faceState[faceKey][idx] = currentPlayerState;
-      facesToRedraw = new Set([faceKey]);
-      redrawFaces(facesToRedraw);
-      updateScoresForFace(faceKey);
-    }
+    const faceKey = ORDER[Math.floor(hit.faceIndex / 2)];
+    const idx = getIndexFromUV(hit.uv);
+    if (idx == null) return;
 
-    if (isBoardFull()) {
+    const facesToRedraw = applyMove(faceKey, idx);
+    if (!facesToRedraw) return;
+    redraw(facesToRedraw);
+    for (const f of facesToRedraw) scoreFace(f);
+
+    if (boardFull()) {
       gameOver = true;
       if (onGameEnd) {
         const winner = scores[1] === scores[2] ? 0 : scores[1] > scores[2] ? 1 : 2;
@@ -408,53 +253,51 @@ export function initRubikGame({ mount, resetButton, onTurnChange, onScoreChange,
       return;
     }
 
-    currentPlayerState = currentPlayerState === 1 ? 2 : 1;
-    if (onTurnChange) onTurnChange(currentPlayerState);
-  }
+    current = current === 1 ? 2 : 1;
+    if (onTurnChange) onTurnChange(current);
+  };
 
-  function handleResize() {
+  const onResize = () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
-  }
+  };
 
-  function animate() {
+  const reset = () => {
+    for (const key of ORDER) faceState[key].fill(0);
+    redraw(new Set(ORDER));
+    current = 1;
+    gameOver = false;
+    scored.clear();
+    scores[1] = 0;
+    scores[2] = 0;
+    onScoreChange?.({ o: 0, x: 0 });
+    onTurnChange?.(current);
+    onReset?.();
+  };
+
+  renderer.domElement.addEventListener("pointerdown", onPointerDown);
+  window.addEventListener("resize", onResize);
+  resetButton?.addEventListener("click", reset);
+
+  const animate = () => {
     requestAnimationFrame(animate);
     rim.rotation.copy(cube.rotation);
     controls.update();
     renderer.render(scene, camera);
-  }
-
-  renderer.domElement.addEventListener("pointerdown", handlePointerDown);
-  window.addEventListener("resize", handleResize);
-
-  if (resetButton) {
-    resetButton.addEventListener("click", () => {
-      for (const key of Object.keys(faceState)) {
-        faceState[key].fill(0);
-      }
-      redrawFaces(new Set(Object.keys(faceTextures)));
-      currentPlayerState = 1;
-      gameOver = false;
-      scoredLines.clear();
-      scores[1] = 0;
-      scores[2] = 0;
-      if (onScoreChange) onScoreChange({ o: 0, x: 0 });
-      if (onTurnChange) onTurnChange(currentPlayerState);
-      if (onReset) onReset();
-    });
-  }
-
+  };
   animate();
+  onTurnChange?.(current);
 
   return {
     scene,
     camera,
     renderer,
     cube,
+    reset,
     dispose() {
-      renderer.domElement.removeEventListener("pointerdown", handlePointerDown);
-      window.removeEventListener("resize", handleResize);
+      renderer.domElement.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("resize", onResize);
     },
   };
 }

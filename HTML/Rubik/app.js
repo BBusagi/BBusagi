@@ -1,59 +1,49 @@
 import { initRubikGame } from "./rubik.js";
 
-const mount = document.getElementById("app");
-const resetButton = document.getElementById("reset-btn");
-const oScore = document.getElementById("o-score");
-const xScore = document.getElementById("x-score");
-const oPlayer = document.getElementById("o-player");
-const xPlayer = document.getElementById("x-player");
-const hint = document.querySelector(".hint");
+const $ = (sel) => document.querySelector(sel);
+const mount = $("#app");
+const resetButton = $("#reset-btn");
+const oScore = $("#o-score");
+const xScore = $("#x-score");
+const oPlayer = $("#o-player");
+const xPlayer = $("#x-player");
+const hint = $(".hint");
+const resultModal = $("#result-modal");
+const resultText = $("#result-text");
+const resultResetBtn = $("#result-reset-btn");
 const defaultHint = "点击小格切换：默认 → O → X，拖动旋转，滚轮缩放";
-const resultModal = document.getElementById("result-modal");
-const resultText = document.getElementById("result-text");
-const resultResetBtn = document.getElementById("result-reset-btn");
 
-function setActivePlayer(playerState) {
-  if (!oPlayer || !xPlayer) return;
-  oPlayer.classList.toggle("active", playerState === 1);
-  xPlayer.classList.toggle("active", playerState === 2);
-}
-
-function setScores({ o, x }) {
+const setActive = (p) => {
+  oPlayer?.classList.toggle("active", p === 1);
+  xPlayer?.classList.toggle("active", p === 2);
+};
+const setScores = ({ o, x }) => {
   if (oScore) oScore.textContent = String(o);
   if (xScore) xScore.textContent = String(x);
-}
-
-function showGameResult({ winner, scores }) {
-  if (resultModal) resultModal.classList.remove("hidden");
+};
+const showResult = ({ winner, scores }) => {
+  resultModal?.classList.remove("hidden");
   if (!resultText) return;
-  if (winner === 0) {
-    resultText.textContent = `平局（O ${scores.o} : X ${scores.x}）`;
-  } else if (winner === 1) {
-    resultText.textContent = `O 获胜（O ${scores.o} : X ${scores.x}）`;
-  } else {
-    resultText.textContent = `X 获胜（O ${scores.o} : X ${scores.x}）`;
-  }
-}
+  if (winner === 0) resultText.textContent = `平局（O ${scores.o} : X ${scores.x}）`;
+  else if (winner === 1) resultText.textContent = `O 获胜（O ${scores.o} : X ${scores.x}）`;
+  else resultText.textContent = `X 获胜（O ${scores.o} : X ${scores.x}）`;
+};
+const resetUI = () => {
+  if (hint) hint.textContent = defaultHint;
+  resultModal?.classList.add("hidden");
+};
 
 initRubikGame({
   mount,
   resetButton,
-  onTurnChange: setActivePlayer,
+  onTurnChange: setActive,
   onScoreChange: setScores,
-  onGameEnd: showGameResult,
-  onReset() {
-    if (hint) hint.textContent = defaultHint;
-    if (resultModal) resultModal.classList.add("hidden");
-  },
+  onGameEnd: showResult,
+  onReset: resetUI,
 });
 
 setScores({ o: 0, x: 0 });
-setActivePlayer(1);
-if (hint) hint.textContent = defaultHint;
-if (resultModal) resultModal.classList.add("hidden");
+setActive(1);
+resetUI();
 
-if (resultResetBtn) {
-  resultResetBtn.addEventListener("click", () => {
-    resetButton?.click();
-  });
-}
+resultResetBtn?.addEventListener("click", () => resetButton?.click());
