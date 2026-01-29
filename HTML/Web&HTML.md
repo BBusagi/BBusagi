@@ -31,5 +31,6 @@
   + local address: http://127.0.0.1/
   + 常用端口：5500（Live Server 默认）
 
-+ 规范与验证
++ Reference
   + CSS 验证器：https://validator.w3.org/
+  + 转译列表：https://dev.w3.org/html5/spec-LC/named-character-references.html
