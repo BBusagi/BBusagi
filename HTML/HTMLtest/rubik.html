@@ -34,7 +34,7 @@
   </head>
   <body>
     <div id="app"></div>
-    <div class="hint">拖动旋转，滚轮缩放</div>
+    <div class="hint">点击小格切换：默认 → O → X，拖动旋转，滚轮缩放</div>
 
     <script type="importmap">
       {
@@ -110,51 +110,85 @@
         ctx.closePath();
       }
 
-      function makeFaceTexture(stickers) {
-        const size = 512;
-        const pad = 36;
-        const gap = 18;
-        const cell = (size - pad * 2 - gap * 2) / 3;
-        const canvas = document.createElement("canvas");
-        canvas.width = size;
-        canvas.height = size;
-        const ctx = canvas.getContext("2d");
+      const TEX_SIZE = 512;
+      const TEX_PAD = 36;
+      const TEX_GAP = 18;
+      const TEX_CELL = (TEX_SIZE - TEX_PAD * 2 - TEX_GAP * 2) / 3;
+      const FACE_ORDER = ["R", "L", "U", "D", "F", "B"];
 
+      const FACE_STATE = {
+        U: Array(9).fill(0),
+        D: Array(9).fill(0),
+        F: Array(9).fill(0),
+        B: Array(9).fill(0),
+        L: Array(9).fill(0),
+        R: Array(9).fill(0),
+      };
+
+      function drawFace(ctx, faceKey) {
+        ctx.clearRect(0, 0, TEX_SIZE, TEX_SIZE);
         ctx.fillStyle = "#1b2230";
-        ctx.fillRect(0, 0, size, size);
+        ctx.fillRect(0, 0, TEX_SIZE, TEX_SIZE);
 
         ctx.fillStyle = "#2a2f38";
-        roundRect(ctx, pad, pad, size - pad * 2, size - pad * 2, 28);
+        roundRect(ctx, TEX_PAD, TEX_PAD, TEX_SIZE - TEX_PAD * 2, TEX_SIZE - TEX_PAD * 2, 28);
         ctx.fill();
 
         for (let y = 0; y < 3; y++) {
           for (let x = 0; x < 3; x++) {
-            const cx = pad + x * (cell + gap);
-            const cy = pad + y * (cell + gap);
+            const cx = TEX_PAD + x * (TEX_CELL + TEX_GAP);
+            const cy = TEX_PAD + y * (TEX_CELL + TEX_GAP);
             const idx = y * 3 + x;
-            ctx.fillStyle = stickers[idx];
-            roundRect(ctx, cx, cy, cell, cell, 18);
+            ctx.fillStyle = FACE_STICKERS[faceKey][idx];
+            roundRect(ctx, cx, cy, TEX_CELL, TEX_CELL, 18);
             ctx.fill();
             ctx.strokeStyle = "#1c2330";
             ctx.lineWidth = 6;
             ctx.stroke();
+
+            const state = FACE_STATE[faceKey][idx];
+            if (state === 1) {
+              const r = TEX_CELL * 0.32;
+              const ox = cx + TEX_CELL / 2;
+              const oy = cy + TEX_CELL / 2;
+              ctx.strokeStyle = "#7dff9b";
+              ctx.lineWidth = 10;
+              ctx.beginPath();
+              ctx.arc(ox, oy, r, 0, Math.PI * 2);
+              ctx.stroke();
+            } else if (state === 2) {
+              const margin = TEX_CELL * 0.28;
+              ctx.strokeStyle = "#ff7a8c";
+              ctx.lineWidth = 10;
+              ctx.beginPath();
+              ctx.moveTo(cx + margin, cy + margin);
+              ctx.lineTo(cx + TEX_CELL - margin, cy + TEX_CELL - margin);
+              ctx.moveTo(cx + TEX_CELL - margin, cy + margin);
+              ctx.lineTo(cx + margin, cy + TEX_CELL - margin);
+              ctx.stroke();
+            }
           }
         }
+      }
 
+      function createFaceTexture(faceKey) {
+        const canvas = document.createElement("canvas");
+        canvas.width = TEX_SIZE;
+        canvas.height = TEX_SIZE;
+        const ctx = canvas.getContext("2d");
+        drawFace(ctx, faceKey);
         const texture = new THREE.CanvasTexture(canvas);
         texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
         texture.needsUpdate = true;
-        return texture;
+        return { canvas, ctx, texture, faceKey };
       }
 
-      const materials = [
-        new THREE.MeshStandardMaterial({ map: makeFaceTexture(FACE_STICKERS.R) }), // +X
-        new THREE.MeshStandardMaterial({ map: makeFaceTexture(FACE_STICKERS.L) }), // -X
-        new THREE.MeshStandardMaterial({ map: makeFaceTexture(FACE_STICKERS.U) }), // +Y
-        new THREE.MeshStandardMaterial({ map: makeFaceTexture(FACE_STICKERS.D) }), // -Y
-        new THREE.MeshStandardMaterial({ map: makeFaceTexture(FACE_STICKERS.F) }), // +Z
-        new THREE.MeshStandardMaterial({ map: makeFaceTexture(FACE_STICKERS.B) }), // -Z
-      ];
+      const faceTextures = {};
+      const materials = FACE_ORDER.map((key) => {
+        const faceTex = createFaceTexture(key);
+        faceTextures[key] = faceTex;
+        return new THREE.MeshStandardMaterial({ map: faceTex.texture });
+      });
 
       const cube = new THREE.Mesh(new THREE.BoxGeometry(3, 3, 3), materials);
       cube.castShadow = true;
@@ -173,6 +207,49 @@
       );
       scene.add(rim);
 
+      const raycaster = new THREE.Raycaster();
+      const pointer = new THREE.Vector2();
+
+      function getStickerIndexFromUV(uv) {
+        const px = uv.x * TEX_SIZE;
+        const py = (1 - uv.y) * TEX_SIZE;
+        for (let y = 0; y < 3; y++) {
+          for (let x = 0; x < 3; x++) {
+            const cx = TEX_PAD + x * (TEX_CELL + TEX_GAP);
+            const cy = TEX_PAD + y * (TEX_CELL + TEX_GAP);
+            if (px >= cx && px <= cx + TEX_CELL && py >= cy && py <= cy + TEX_CELL) {
+              return y * 3 + x;
+            }
+          }
+        }
+        return null;
+      }
+
+      function onPointerDown(event) {
+        const rect = renderer.domElement.getBoundingClientRect();
+        pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(pointer, camera);
+        const hits = raycaster.intersectObject(cube, false);
+        if (!hits.length) return;
+        const hit = hits[0];
+        if (!hit.uv) return;
+        const faceIndex = hit.faceIndex ?? -1;
+        if (faceIndex < 0) return;
+        const side = Math.floor(faceIndex / 2);
+        const faceKey = FACE_ORDER[side];
+        const idx = getStickerIndexFromUV(hit.uv);
+        if (idx === null) return;
+
+        const state = FACE_STATE[faceKey][idx];
+        FACE_STATE[faceKey][idx] = (state + 1) % 3;
+        const faceTex = faceTextures[faceKey];
+        drawFace(faceTex.ctx, faceKey);
+        faceTex.texture.needsUpdate = true;
+      }
+
+      renderer.domElement.addEventListener("pointerdown", onPointerDown);
+
       function onResize() {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
@@ -182,8 +259,6 @@
 
       function animate() {
         requestAnimationFrame(animate);
-        cube.rotation.y += 0.002;
-        cube.rotation.x += 0.001;
         rim.rotation.copy(cube.rotation);
         controls.update();
         renderer.render(scene, camera);
