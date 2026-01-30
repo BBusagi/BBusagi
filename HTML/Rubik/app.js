@@ -11,6 +11,9 @@ const hint = $(".hint");
 const resultModal = $("#result-modal");
 const resultText = $("#result-text");
 const resultResetBtn = $("#result-reset-btn");
+const rulesBtn = $("#rules-btn");
+const rulesModal = $("#rules-modal");
+const rulesCloseBtn = $("#rules-close-btn");
 const defaultHint = "点击小格切换：默认 → O → X，拖动旋转，滚轮缩放";
 
 const setActive = (p) => {
@@ -47,3 +50,5 @@ setActive(1);
 resetUI();
 
 resultResetBtn?.addEventListener("click", () => resetButton?.click());
+rulesBtn?.addEventListener("click", () => rulesModal?.classList.remove("hidden"));
+rulesCloseBtn?.addEventListener("click", () => rulesModal?.classList.add("hidden"));
