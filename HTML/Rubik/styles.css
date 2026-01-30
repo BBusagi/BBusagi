@@ -130,10 +130,26 @@ body {
 .result-btn:hover {
   background: #5a6375;
 }
-#rules-btn {
+#lang-btn {
   position: fixed;
   left: 16px;
   top: 12px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid #3b4250;
+  background: #3a404b;
+  color: #eef2f7;
+  font-size: 13px;
+  cursor: pointer;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+#lang-btn:hover {
+  background: #4a5160;
+}
+#rules-btn {
+  position: fixed;
+  left: 16px;
+  top: 52px;
   padding: 8px 14px;
   border-radius: 10px;
   border: 1px solid #3b4250;
@@ -149,7 +165,7 @@ body {
 #reset-btn {
   position: fixed;
   left: 16px;
-  top: 52px;
+  top: 92px;
   padding: 8px 14px;
   border-radius: 10px;
   border: 1px solid #3b4250;
