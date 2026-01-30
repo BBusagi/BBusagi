@@ -22,8 +22,25 @@
       </div>
     </div>
     <div id="app"></div>
+    <button id="rules-btn" type="button">规则</button>
     <button id="reset-btn" type="button">重置</button>
     <div class="hint">点击小格切换：默认 → O → X，拖动旋转，滚轮缩放</div>
+    <div id="rules-modal" class="rules-modal hidden" aria-live="polite">
+      <div class="rules-card" role="dialog" aria-modal="true" aria-labelledby="rules-title">
+        <div class="rules-header">
+          <div id="rules-title" class="rules-title">游戏规则</div>
+          <button id="rules-close-btn" class="rules-close" type="button">×</button>
+        </div>
+        <ol class="rules-list">
+          <li>玩家 O 先手，玩家 X 后手，轮流落子。</li>
+          <li>每个格子只能从默认变为当前玩家图案一次。</li>
+          <li>角落格会同步到相邻两个面的角落。</li>
+          <li>边中格会同步到相邻一个面的对应边格。</li>
+          <li>中心格不联动。</li>
+          <li>单面出现三连即得 1 分；全部填满后比分高者获胜。</li>
+        </ol>
+      </div>
+    </div>
     <div id="result-modal" class="result-modal hidden" aria-live="polite">
       <div class="result-card" role="dialog" aria-modal="true" aria-labelledby="result-title">
         <div id="result-title" class="result-title">游戏结束</div>
