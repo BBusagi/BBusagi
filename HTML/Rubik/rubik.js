@@ -78,7 +78,7 @@ const rr = (ctx, x, y, w, h, r) => {
   ctx.closePath();
 };
 
-export function initRubikGame({ mount, resetButton, onTurnChange, onScoreChange, onGameEnd, onReset }) {
+export function initRubikGame({ mount, resetButton, onTurnChange, onScoreChange, onGameEnd, onReset, getMode }) {
   if (!mount) throw new Error("Missing mount element");
 
   const [texSize, pad, gap, cellR, frameR] = CFG.tex;
@@ -88,6 +88,9 @@ export function initRubikGame({ mount, resetButton, onTurnChange, onScoreChange,
   const scored = new Set();
   let current = 1;
   let gameOver = false;
+  const getModeSafe = typeof getMode === "function" ? getMode : () => "local";
+  const HUMAN = 1;
+  const AI = 2;
 
   const scene = new THREE.Scene();
   scene.fog = new THREE.Fog(...CFG.fog);
@@ -220,29 +223,73 @@ export function initRubikGame({ mount, resetButton, onTurnChange, onScoreChange,
     return null;
   };
 
-  const applyMove = (faceKey, idx) => {
-    const group = LINK.get(`${faceKey}-${idx}`);
-    const targets = group ?? [[faceKey, idx]];
-    for (const [f, i] of targets) if (faceState[f][i] !== 0) return null;
-    for (const [f, i] of targets) faceState[f][i] = current;
+  const getTargets = (faceKey, idx) => LINK.get(`${faceKey}-${idx}`) ?? [[faceKey, idx]];
+  const isLegalTargets = (targets) => targets.every(([f, i]) => faceState[f][i] === 0);
+  const applyTargets = (targets, player) => {
+    for (const [f, i] of targets) faceState[f][i] = player;
     return new Set(targets.map(([f]) => f));
   };
 
-  const onPointerDown = (event) => {
-    if (gameOver) return;
-    const rect = renderer.domElement.getBoundingClientRect();
-    pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-    raycaster.setFromCamera(pointer, camera);
-    const hit = raycaster.intersectObject(cube, false)[0];
-    if (!hit?.uv || hit.faceIndex == null) return;
+  const cellId = (f, i) => `${f}-${i}`;
+  const listLegalMoves = () => {
+    const moves = [];
+    const seen = new Set();
+    for (const faceKey of ORDER) {
+      for (let idx = 0; idx < 9; idx++) {
+        const targets = getTargets(faceKey, idx);
+        if (!isLegalTargets(targets)) continue;
+        const key = targets.map(([f, i]) => cellId(f, i)).sort().join("|");
+        if (seen.has(key)) continue;
+        seen.add(key);
+        const targetsSet = new Set(targets.map(([f, i]) => cellId(f, i)));
+        const facesSet = new Set(targets.map(([f]) => f));
+        moves.push({ faceKey, idx, targets, targetsSet, facesSet });
+      }
+    }
+    return moves;
+  };
 
-    const faceKey = ORDER[Math.floor(hit.faceIndex / 2)];
-    const idx = getIndexFromUV(hit.uv);
-    if (idx == null) return;
+  const wouldCreateLine = (player, targetsSet, facesSet) => {
+    const valueAt = (f, i) => (targetsSet.has(cellId(f, i)) ? player : faceState[f][i]);
+    for (const faceKey of facesSet) {
+      for (const [a, b, c] of LINES) {
+        if (valueAt(faceKey, a) === player && valueAt(faceKey, b) === player && valueAt(faceKey, c) === player) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
 
-    const facesToRedraw = applyMove(faceKey, idx);
-    if (!facesToRedraw) return;
+  const pickAiMove = () => {
+    const legal = listLegalMoves();
+    if (!legal.length) return null;
+
+    const winning = legal.find((m) => wouldCreateLine(AI, m.targetsSet, m.facesSet));
+    if (winning) return winning;
+
+    const humanWins = legal.filter((m) => wouldCreateLine(HUMAN, m.targetsSet, m.facesSet));
+    if (humanWins.length) {
+      for (const move of legal) {
+        for (const win of humanWins) {
+          for (const id of move.targetsSet) {
+            if (win.targetsSet.has(id)) return move;
+          }
+        }
+      }
+    }
+
+    const hasIdx = (m, ids) => m.targets.some(([, i]) => ids.includes(i));
+    const center = legal.find((m) => hasIdx(m, [4]));
+    if (center) return center;
+    const corners = legal.find((m) => hasIdx(m, [0, 2, 6, 8]));
+    if (corners) return corners;
+    const edges = legal.find((m) => hasIdx(m, [1, 3, 5, 7]));
+    if (edges) return edges;
+    return legal[Math.floor(Math.random() * legal.length)];
+  };
+
+  const finishMove = (facesToRedraw) => {
     redraw(facesToRedraw);
     for (const f of facesToRedraw) scoreFace(f);
 
@@ -256,7 +303,39 @@ export function initRubikGame({ mount, resetButton, onTurnChange, onScoreChange,
     }
 
     current = current === 1 ? 2 : 1;
-    if (onTurnChange) onTurnChange(current);
+    onTurnChange?.(current);
+  };
+
+  const scheduleAiMove = () => {
+    if (gameOver || getModeSafe() !== "debug" || current !== AI) return;
+    setTimeout(() => {
+      if (gameOver || getModeSafe() !== "debug" || current !== AI) return;
+      const move = pickAiMove();
+      if (!move) return;
+      const facesToRedraw = applyTargets(move.targets, AI);
+      finishMove(facesToRedraw);
+    }, 220);
+  };
+
+  const onPointerDown = (event) => {
+    if (gameOver) return;
+    if (getModeSafe() === "debug" && current === AI) return;
+    const rect = renderer.domElement.getBoundingClientRect();
+    pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(pointer, camera);
+    const hit = raycaster.intersectObject(cube, false)[0];
+    if (!hit?.uv || hit.faceIndex == null) return;
+
+    const faceKey = ORDER[Math.floor(hit.faceIndex / 2)];
+    const idx = getIndexFromUV(hit.uv);
+    if (idx == null) return;
+
+    const targets = getTargets(faceKey, idx);
+    if (!isLegalTargets(targets)) return;
+    const facesToRedraw = applyTargets(targets, current);
+    finishMove(facesToRedraw);
+    scheduleAiMove();
   };
 
   const onResize = () => {
