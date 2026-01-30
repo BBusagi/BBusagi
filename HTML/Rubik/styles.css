@@ -6,7 +6,7 @@ html,
 body {
   margin: 0;
   height: 100%;
-  background: radial-gradient(1200px 800px at 20% 10%, #3a3f48, #2b2f36 60%);
+  background: #000000;
   color: var(--fg);
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
