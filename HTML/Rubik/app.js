@@ -18,7 +18,7 @@ const rulesCloseBtn = $("#rules-close-btn");
 const langBtn = $("#lang-btn");
 const modeBtn = $("#mode-btn");
 const i18n = createI18n({ defaultLang: "en" });
-const MODE_ORDER = ["local", "online", "ai"];
+const MODE_ORDER = ["local", "online", "ai", "debug"];
 let currentMode = "local";
 let lastResult = null;
 
@@ -61,6 +61,7 @@ const resetUI = () => {
 initRubikGame({
   mount,
   resetButton,
+  getMode: () => currentMode,
   onTurnChange: setActive,
   onScoreChange: setScores,
   onGameEnd: showResult,
@@ -84,4 +85,5 @@ modeBtn?.addEventListener("click", () => {
   const idx = MODE_ORDER.indexOf(currentMode);
   currentMode = MODE_ORDER[(idx + 1) % MODE_ORDER.length] ?? "local";
   applyI18n();
+  resetButton?.click();
 });
