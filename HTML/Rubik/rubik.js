@@ -11,7 +11,7 @@ const CFG = {
   ],
   cube: [3, 3.04],
   tex: [512, 36, 18, 18, 28],
-  marks: { o: "#7dff9b", x: "#ff7a8c", w: 10, oScale: 0.32, xGap: 0.28 },
+  marks: { o: "#23D984", x: "#d67284", w: 10, oScale: 0.32, xGap: 0.28 },
   ui: { bg: "#1b2230", panel: "#2a2f38", border: "#1c2330" },
   colors: {
     U: "#ffffff",
@@ -91,6 +91,7 @@ export function initRubikGame({ mount, resetButton, onTurnChange, onScoreChange,
 
   const scene = new THREE.Scene();
   scene.fog = new THREE.Fog(...CFG.fog);
+  scene.background = new THREE.Color(0x3a3f48);
 
   const camera = new THREE.PerspectiveCamera(CFG.cam[0], window.innerWidth / window.innerHeight, CFG.cam[1], CFG.cam[2]);
   camera.position.set(CFG.cam[3], CFG.cam[4], CFG.cam[5]);
@@ -98,6 +99,7 @@ export function initRubikGame({ mount, resetButton, onTurnChange, onScoreChange,
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x3a3f48, 1);
   mount.appendChild(renderer.domElement);
 
   for (const [c, i, x, y, z] of CFG.lights) {
