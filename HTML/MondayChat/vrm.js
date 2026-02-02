@@ -24,6 +24,9 @@ if (hint) {
   hint.textContent = "VRM 加载中...";
 }
 const config = (window.MONDAY_CONFIG && window.MONDAY_CONFIG.vrm) || {};
+const OFFSET_KEY = "monday_vrm_offset";
+const LOCKED_OFFSET_KEY = "monday_vrm_offset_locked";
+const MOVE_ENABLED_KEY = "monday_vrm_move_enabled";
 
 let renderer = null;
 try {
@@ -56,28 +59,125 @@ controls.enableDamping = true;
 controls.dampingFactor = 0.08;
 controls.minDistance = 1.2;
 controls.maxDistance = 4.0;
-controls.enabled = isFittingRoom;
+controls.enabled = true;
 
 renderer.domElement.style.pointerEvents = "auto";
 if (stage && stage.style) {
   stage.style.pointerEvents = "auto";
 }
-if (isFittingRoom) {
-  setHint("可滚轮缩放、拖拽旋转");
-  renderer.domElement.addEventListener("pointerdown", () => {
-    renderer.domElement.style.cursor = "grabbing";
-  });
-  renderer.domElement.addEventListener("pointerup", () => {
-    renderer.domElement.style.cursor = "grab";
-  });
-  renderer.domElement.addEventListener("wheel", () => {
+setHint("拖拽旋转 · 滚轮缩放 · WASD 移动");
+renderer.domElement.addEventListener("pointerdown", () => {
+  renderer.domElement.style.cursor = "grabbing";
+});
+renderer.domElement.addEventListener("pointerup", () => {
+  renderer.domElement.style.cursor = "grab";
+});
+renderer.domElement.addEventListener(
+  "wheel",
+  () => {
     setHint("滚轮缩放生效");
     clearTimeout(renderer.domElement.__hintTimer);
     renderer.domElement.__hintTimer = setTimeout(() => {
-      setHint("可滚轮缩放、拖拽旋转");
+      setHint("拖拽旋转 · 滚轮缩放 · WASD 移动");
     }, 1200);
-  }, { passive: true });
-}
+  },
+  { passive: true }
+);
+
+
+const persistOffset = () => {
+  try {
+    window.localStorage.setItem(
+      OFFSET_KEY,
+      JSON.stringify([MODEL_OFFSET.x, MODEL_OFFSET.y, MODEL_OFFSET.z])
+    );
+  } catch {
+    // ignore storage failures
+  }
+};
+
+const persistLockedOffset = () => {
+  try {
+    window.localStorage.setItem(
+      LOCKED_OFFSET_KEY,
+      JSON.stringify([LOCKED_OFFSET.x, LOCKED_OFFSET.y, LOCKED_OFFSET.z])
+    );
+  } catch {
+    // ignore storage failures
+  }
+};
+
+const updateReadout = () => {
+  const readout = document.getElementById("offsetReadout");
+  if (!readout) return;
+  readout.textContent = `offset: (${MODEL_OFFSET.x.toFixed(2)}, ${MODEL_OFFSET.y.toFixed(2)}, ${MODEL_OFFSET.z.toFixed(2)})`;
+};
+
+const updateButtons = () => {
+  const btn = document.getElementById("moveToggleBtn");
+  if (!btn) return;
+  btn.textContent = moveEnabled ? "关闭位移" : "开启位移";
+};
+
+const updateMoveEnabled = (enabled) => {
+  moveEnabled = enabled;
+  try {
+    window.localStorage.setItem(MOVE_ENABLED_KEY, String(enabled));
+  } catch {
+    // ignore storage failures
+  }
+  if (!moveEnabled) {
+    MODEL_OFFSET.copy(LOCKED_OFFSET);
+    persistOffset();
+  }
+  updateReadout();
+  updateButtons();
+};
+
+const initDebugPanel = () => {
+  const moveBtn = document.getElementById("moveToggleBtn");
+  const saveBtn = document.getElementById("saveOffsetBtn");
+  if (moveBtn) {
+    moveBtn.addEventListener("click", () => {
+      updateMoveEnabled(!moveEnabled);
+    });
+  }
+  if (saveBtn) {
+    saveBtn.addEventListener("click", () => {
+      LOCKED_OFFSET.copy(MODEL_OFFSET);
+      persistLockedOffset();
+      updateMoveEnabled(false);
+    });
+  }
+  updateButtons();
+  updateReadout();
+};
+
+window.addEventListener("keydown", (event) => {
+  if (!moveEnabled) return;
+  if (event.target && ["INPUT", "TEXTAREA"].includes(event.target.tagName)) {
+    return;
+  }
+  const step = event.shiftKey ? 0.08 : 0.03;
+  switch (event.key.toLowerCase()) {
+    case "w":
+      MODEL_OFFSET.y += step;
+      break;
+    case "s":
+      MODEL_OFFSET.y -= step;
+      break;
+    case "a":
+      MODEL_OFFSET.x -= step;
+      break;
+    case "d":
+      MODEL_OFFSET.x += step;
+      break;
+    default:
+      return;
+  }
+  persistOffset();
+  updateReadout();
+});
 
 const ambient = new THREE.AmbientLight(0xffffff, 0.7);
 scene.add(ambient);
@@ -91,9 +191,22 @@ rimLight.position.set(-1.8, 1.6, -1.6);
 scene.add(rimLight);
 
 let currentVrm = null;
+let modelBasePosition = new THREE.Vector3(0, 0, 0);
 const clock = new THREE.Clock();
 const modelConfig = config.model || {};
-const MODEL_OFFSET = new THREE.Vector3(...(modelConfig.offset || [0, 0, 0]));
+const readStoredVector = (key) => {
+  try {
+    return JSON.parse(window.localStorage.getItem(key) || "null");
+  } catch {
+    return null;
+  }
+};
+const baseOffset = modelConfig.offset || [0, 0, 0];
+const lockedOffset = readStoredVector(LOCKED_OFFSET_KEY) || baseOffset;
+const storedOffset = readStoredVector(OFFSET_KEY) || lockedOffset;
+const MODEL_OFFSET = new THREE.Vector3(...storedOffset);
+const LOCKED_OFFSET = new THREE.Vector3(...lockedOffset);
+let moveEnabled = window.localStorage.getItem(MOVE_ENABLED_KEY) === "true";
 const MODEL_Y_ROTATION = modelConfig.yRotation ?? 0;
 const MODEL_BASE_Y_ROTATION = MODEL_Y_ROTATION;
 
@@ -122,6 +235,7 @@ const loadModel = () => {
       const scaledSize = box.getSize(new THREE.Vector3());
       vrm.scene.position.sub(center);
       vrm.scene.position.y += scaledSize.y / 2;
+      modelBasePosition.copy(vrm.scene.position);
       vrm.scene.position.add(MODEL_OFFSET);
 
       const lookAtYRatio = cameraConfig.lookAtYRatio || 0.7;
@@ -166,10 +280,29 @@ const animate = () => {
   const t = clock.elapsedTime;
 
   if (currentVrm) {
-    const bob = Math.sin(t * 0.8) * 0.02;
-    const sway = Math.sin(t * 0.3) * 0.08;
-    currentVrm.scene.position.y = bob;
+    const bob = Math.sin(t * 0.8) * 0.01;
+    const sway = Math.sin(t * 0.3) * 0.04;
+    currentVrm.scene.position.copy(modelBasePosition);
+    currentVrm.scene.position.x = modelBasePosition.x + MODEL_OFFSET.x;
+    currentVrm.scene.position.y = modelBasePosition.y + MODEL_OFFSET.y + bob;
+    currentVrm.scene.position.z = modelBasePosition.z + MODEL_OFFSET.z;
     currentVrm.scene.rotation.y = MODEL_BASE_Y_ROTATION + sway;
+
+    // Subtle smile and wave (if VRM supports expressions/bones)
+    const expr = currentVrm.expressionManager;
+    if (expr) {
+      const smile = (Math.sin(t * 0.6) * 0.5 + 0.5) * 0.35;
+      expr.setValue("happy", smile);
+    }
+
+    const rightUpperArm = currentVrm.humanoid?.getNormalizedBoneNode("rightUpperArm");
+    const rightLowerArm = currentVrm.humanoid?.getNormalizedBoneNode("rightLowerArm");
+    if (rightUpperArm && rightLowerArm) {
+      const wave = Math.sin(t * 2.2) * 0.35;
+      rightUpperArm.rotation.z = -0.4 + wave * 0.4;
+      rightUpperArm.rotation.x = 0.2;
+      rightLowerArm.rotation.z = -0.3 + wave * 0.6;
+    }
 
     const neck = currentVrm.humanoid?.getNormalizedBoneNode("neck");
     if (neck) {
@@ -201,5 +334,8 @@ document.addEventListener("visibilitychange", () => {
     start();
   }
 });
+
+initDebugPanel();
+updateMoveEnabled(moveEnabled);
 
 animate();
