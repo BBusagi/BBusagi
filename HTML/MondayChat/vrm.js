@@ -8,19 +8,22 @@ import {
 const canvas = document.getElementById("vrmCanvas");
 const stage = document.querySelector(".vrm-stage");
 const hint = document.getElementById("vrmHint");
+const config = (window.MONDAY_CONFIG && window.MONDAY_CONFIG.vrm) || {};
 
 const renderer = new THREE.WebGLRenderer({
   canvas,
   alpha: true,
   antialias: true,
 });
-renderer.setPixelRatio(window.devicePixelRatio || 1);
+const pixelRatioMax = config.pixelRatioMax || 1.5;
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, pixelRatioMax));
 renderer.setClearColor(0x000000, 0);
 
 const scene = new THREE.Scene();
 
-const camera = new THREE.PerspectiveCamera(28, 1, 0.1, 100);
-camera.position.set(0, 1.6, 2.0);
+const cameraConfig = config.camera || {};
+const camera = new THREE.PerspectiveCamera(cameraConfig.fov || 28, 1, 0.1, 100);
+camera.position.set(...(cameraConfig.position || [0, 1.6, 2.0]));
 
 const ambient = new THREE.AmbientLight(0xffffff, 0.7);
 scene.add(ambient);
@@ -35,15 +38,16 @@ scene.add(rimLight);
 
 let currentVrm = null;
 const clock = new THREE.Clock();
-const MODEL_OFFSET = new THREE.Vector3(0, 0, 0);
-const MODEL_Y_ROTATION = 0;
+const modelConfig = config.model || {};
+const MODEL_OFFSET = new THREE.Vector3(...(modelConfig.offset || [0, 0, 0]));
+const MODEL_Y_ROTATION = modelConfig.yRotation ?? 0;
 const MODEL_BASE_Y_ROTATION = MODEL_Y_ROTATION;
 
 const loader = new GLTFLoader();
 loader.register((parser) => new VRMLoaderPlugin(parser));
 
 const loadModel = () => {
-  const modelUrl = "./models/monday.vrm";
+  const modelUrl = config.modelUrl || "./models/monday.vrm";
   loader.load(
     modelUrl,
     (gltf) => {
@@ -55,7 +59,7 @@ const loadModel = () => {
 
       const box = new THREE.Box3().setFromObject(vrm.scene);
       const size = box.getSize(new THREE.Vector3());
-      const targetHeight = 1.9;
+      const targetHeight = config.targetHeight || 1.9;
       const scale = targetHeight / size.y;
       vrm.scene.scale.setScalar(scale);
 
@@ -66,7 +70,8 @@ const loadModel = () => {
       vrm.scene.position.y += scaledSize.y / 2;
       vrm.scene.position.add(MODEL_OFFSET);
 
-      const headTarget = new THREE.Vector3(0, scaledSize.y * 0.7, 0);
+      const lookAtYRatio = cameraConfig.lookAtYRatio || 0.7;
+      const headTarget = new THREE.Vector3(0, scaledSize.y * lookAtYRatio, 0);
       camera.lookAt(headTarget);
       scene.add(vrm.scene);
 
@@ -93,7 +98,10 @@ new ResizeObserver(resize).observe(stage);
 resize();
 loadModel();
 
+let running = true;
+
 const animate = () => {
+  if (!running) return;
   requestAnimationFrame(animate);
   const delta = clock.getDelta();
   const t = clock.elapsedTime;
@@ -114,5 +122,24 @@ const animate = () => {
 
   renderer.render(scene, camera);
 };
+
+const start = () => {
+  if (running) return;
+  running = true;
+  clock.start();
+  animate();
+};
+
+const stop = () => {
+  running = false;
+};
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    stop();
+  } else {
+    start();
+  }
+});
 
 animate();
