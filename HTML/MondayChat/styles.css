@@ -15,6 +15,10 @@
   --shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
   --radius-lg: 28px;
   --radius-md: 18px;
+  --bg-scale: 105%;
+  --bg-pos: center 30%;
+  --fg-scale: 95%;
+  --fg-pos: center 60%;
 }
 
 * {
@@ -36,6 +40,29 @@ body {
   inset: 0;
   z-index: 0;
   pointer-events: none;
+}
+
+.bar-scene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: url("./img/background.png") var(--bg-pos) / var(--bg-scale) no-repeat;
+  filter: saturate(1.1) contrast(1.05);
+}
+
+.bar-scene::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(8, 10, 16, 0.5), rgba(8, 10, 16, 0.75));
+}
+
+.bar-foreground {
+  position: absolute;
+  inset: 0;
+  background: url("./img/foreground.png") var(--fg-pos) / var(--fg-scale) no-repeat;
+  opacity: 0.9;
+  filter: saturate(1.05) contrast(1.08);
 }
 
 .bg-grid {
@@ -74,6 +101,35 @@ body {
   background: var(--neon-3);
   top: 40%;
   right: -140px;
+}
+
+.ui-toggle {
+  position: fixed;
+  top: 18px;
+  left: 18px;
+  z-index: 3;
+  background: rgba(8, 10, 16, 0.7);
+  border: 1px solid rgba(56, 242, 255, 0.45);
+  color: var(--ink-1);
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+}
+
+.ui-hidden .app,
+.ui-hidden .bg-grid,
+.ui-hidden .bg-glow {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ui-hidden .ui-toggle {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .app {
