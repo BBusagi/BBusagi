@@ -18,6 +18,11 @@
 
     <button class="ui-toggle" id="uiToggle" type="button">隐藏界面</button>
 
+    <div class="vrm-stage" aria-hidden="true">
+      <canvas id="vrmCanvas"></canvas>
+      <div class="vrm-hint" id="vrmHint">未检测到 VRM 模型</div>
+    </div>
+
     <main class="app">
       <header class="topbar">
         <div class="brand">
@@ -79,6 +84,15 @@
       </footer>
     </main>
 
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js",
+          "three/examples/jsm/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/"
+        }
+      }
+    </script>
     <script src="app.js"></script>
+    <script type="module" src="vrm.js"></script>
   </body>
 </html>
