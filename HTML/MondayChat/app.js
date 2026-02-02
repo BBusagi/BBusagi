@@ -3,6 +3,9 @@ const composer = document.getElementById("composer");
 const input = document.getElementById("input");
 const sendBtn = document.getElementById("sendBtn");
 const chatMeta = document.getElementById("chatMeta");
+const uiToggle = document.getElementById("uiToggle");
+
+let uiHidden = false;
 
 let history = [];
 let summaryBullets = [];
@@ -107,3 +110,9 @@ const boot = () => {
 };
 
 boot();
+
+uiToggle.addEventListener("click", () => {
+  uiHidden = !uiHidden;
+  document.body.classList.toggle("ui-hidden", uiHidden);
+  uiToggle.textContent = uiHidden ? "显示界面" : "隐藏界面";
+});
