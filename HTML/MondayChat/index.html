@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh-Hans">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Monday Chat</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="bg">
+      <div class="bg-grid"></div>
+      <div class="bg-glow bg-glow-1"></div>
+      <div class="bg-glow bg-glow-2"></div>
+      <div class="bg-glow bg-glow-3"></div>
+    </div>
+
+    <main class="app">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-badge">M</div>
+          <div class="brand-text">
+            <div class="brand-title">Monday</div>
+            <div class="brand-sub">Cyber Neon Bartender</div>
+          </div>
+        </div>
+        <div class="status">
+          <span class="status-dot"></span>
+          <span class="status-text">本地模式</span>
+        </div>
+      </header>
+
+      <section class="stage">
+        <aside class="persona">
+          <div class="persona-card">
+            <div class="persona-ring"></div>
+            <div class="persona-avatar">
+              <div class="persona-eye"></div>
+              <div class="persona-eye persona-eye-right"></div>
+            </div>
+            <div class="persona-name">Monday</div>
+            <div class="persona-tag">毒舌 · 冷静 · 克制</div>
+            <div class="persona-desc">
+              只做文字，不哄人，不陪笑。你可以说，但别指望她顺着你。
+            </div>
+          </div>
+        </aside>
+
+        <section class="chat">
+          <div class="chat-header">
+            <div class="chat-title">吧台对话</div>
+            <div class="chat-meta" id="chatMeta">0 条对话</div>
+          </div>
+
+          <div class="chat-body" id="chatBody"></div>
+
+          <form class="composer" id="composer">
+            <div class="composer-frame">
+              <textarea
+                id="input"
+                placeholder="把话放到台面上。"
+                rows="2"
+                maxlength="400"
+              ></textarea>
+              <div class="composer-actions">
+                <div class="hint" id="hint">回车发送 · Shift+回车换行</div>
+                <button type="submit" id="sendBtn">上酒</button>
+              </div>
+            </div>
+          </form>
+        </section>
+      </section>
+
+      <footer class="footer">
+        <div class="footer-note">Monday 只走本地请求，依赖环境变量 OPENAI_API_KEY</div>
+      </footer>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
