@@ -179,6 +179,72 @@ window.addEventListener("keydown", (event) => {
   updateReadout();
 });
 
+const leftArmPad = document.getElementById("leftArmPad");
+const rightArmPad = document.getElementById("rightArmPad");
+let leftArmDrag = false;
+let rightArmDrag = false;
+let leftArmBaseX = 0;
+let rightArmBaseX = 0;
+let leftArmStartX = 0;
+let rightArmStartX = 0;
+let leftArmStartY = 0;
+let rightArmStartY = 0;
+
+const attachArmControls = () => {
+  const leftUpperArm = currentVrm?.humanoid?.getNormalizedBoneNode("leftUpperArm");
+  const rightUpperArm = currentVrm?.humanoid?.getNormalizedBoneNode("rightUpperArm");
+  const leftLowerArm = currentVrm?.humanoid?.getNormalizedBoneNode("leftLowerArm");
+  const rightLowerArm = currentVrm?.humanoid?.getNormalizedBoneNode("rightLowerArm");
+  if (!leftUpperArm || !rightUpperArm) return;
+
+  const startDrag = (side, event) => {
+    event.preventDefault();
+    if (side === "left") {
+      leftArmDrag = true;
+      leftArmStartX = leftUpperArm.rotation.y;
+      leftArmStartY = event.clientY;
+      leftArmPad?.classList.add("active");
+    } else {
+      rightArmDrag = true;
+      rightArmStartX = rightUpperArm.rotation.y;
+      rightArmStartY = event.clientY;
+      rightArmPad?.classList.add("active");
+    }
+  };
+
+  const stopDrag = () => {
+    leftArmDrag = false;
+    rightArmDrag = false;
+    leftArmPad?.classList.remove("active");
+    rightArmPad?.classList.remove("active");
+  };
+
+  const onMove = (event) => {
+    if (!leftArmDrag && !rightArmDrag) return;
+    if (leftArmDrag && leftUpperArm) {
+      const dy = event.clientY - leftArmStartY;
+      const next = THREE.MathUtils.clamp(leftArmStartX + dy * 0.01, -1.4, 0.6);
+      leftUpperArm.rotation.y = next;
+      if (leftLowerArm) {
+        leftLowerArm.rotation.y = THREE.MathUtils.clamp(next * 0.4, -0.6, 0.4);
+      }
+    }
+    if (rightArmDrag && rightUpperArm) {
+      const dy = event.clientY - rightArmStartY;
+      const next = THREE.MathUtils.clamp(rightArmStartX + dy * 0.01, -0.6, 1.4);
+      rightUpperArm.rotation.y = next;
+      if (rightLowerArm) {
+        rightLowerArm.rotation.y = THREE.MathUtils.clamp(next * 0.4, -0.4, 0.6);
+      }
+    }
+  };
+
+  leftArmPad?.addEventListener("pointerdown", (e) => startDrag("left", e));
+  rightArmPad?.addEventListener("pointerdown", (e) => startDrag("right", e));
+  window.addEventListener("pointerup", stopDrag);
+  window.addEventListener("pointermove", onMove);
+};
+
 const ambient = new THREE.AmbientLight(0xffffff, 0.7);
 scene.add(ambient);
 
@@ -209,9 +275,25 @@ const LOCKED_OFFSET = new THREE.Vector3(...lockedOffset);
 let moveEnabled = window.localStorage.getItem(MOVE_ENABLED_KEY) === "true";
 const MODEL_Y_ROTATION = modelConfig.yRotation ?? 0;
 const MODEL_BASE_Y_ROTATION = MODEL_Y_ROTATION;
+const SHOULDER_ROT_KEY = "monday_vrm_shoulder_rot";
+
+const resetShoulderRot = () => {
+  try {
+    window.localStorage.removeItem(SHOULDER_ROT_KEY);
+  } catch {
+    // ignore
+  }
+};
 
 const loader = new GLTFLoader();
 loader.register((parser) => new VRMLoaderPlugin(parser));
+
+const applyIdlePose = (vrm) => {
+  const humanoid = vrm.humanoid;
+  if (!humanoid) return;
+
+  // Intentionally keep default bind pose; no joint overrides here.
+};
 
 const loadModel = () => {
   const modelUrl = config.modelUrl || "./models/monday.vrm";
@@ -223,6 +305,8 @@ const loadModel = () => {
 
       currentVrm = vrm;
       vrm.scene.rotation.y = MODEL_Y_ROTATION;
+      resetShoulderRot();
+      applyIdlePose(vrm);
 
       const box = new THREE.Box3().setFromObject(vrm.scene);
       const size = box.getSize(new THREE.Vector3());
@@ -288,21 +372,6 @@ const animate = () => {
     currentVrm.scene.position.z = modelBasePosition.z + MODEL_OFFSET.z;
     currentVrm.scene.rotation.y = MODEL_BASE_Y_ROTATION + sway;
 
-    // Subtle smile and wave (if VRM supports expressions/bones)
-    const expr = currentVrm.expressionManager;
-    if (expr) {
-      const smile = (Math.sin(t * 0.6) * 0.5 + 0.5) * 0.35;
-      expr.setValue("happy", smile);
-    }
-
-    const rightUpperArm = currentVrm.humanoid?.getNormalizedBoneNode("rightUpperArm");
-    const rightLowerArm = currentVrm.humanoid?.getNormalizedBoneNode("rightLowerArm");
-    if (rightUpperArm && rightLowerArm) {
-      const wave = Math.sin(t * 2.2) * 0.35;
-      rightUpperArm.rotation.z = -0.4 + wave * 0.4;
-      rightUpperArm.rotation.x = 0.2;
-      rightLowerArm.rotation.z = -0.3 + wave * 0.6;
-    }
 
     const neck = currentVrm.humanoid?.getNormalizedBoneNode("neck");
     if (neck) {
