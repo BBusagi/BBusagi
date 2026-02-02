@@ -4,6 +4,7 @@ const input = document.getElementById("input");
 const sendBtn = document.getElementById("sendBtn");
 const chatMeta = document.getElementById("chatMeta");
 const uiToggle = document.getElementById("uiToggle");
+const fitBtn = document.getElementById("fitBtn");
 
 let uiHidden = false;
 
@@ -116,3 +117,10 @@ uiToggle.addEventListener("click", () => {
   document.body.classList.toggle("ui-hidden", uiHidden);
   uiToggle.textContent = uiHidden ? "显示界面" : "隐藏界面";
 });
+
+if (fitBtn) {
+  fitBtn.addEventListener("click", (event) => {
+    event.stopPropagation();
+    window.location.assign("/fittingroom.html");
+  });
+}

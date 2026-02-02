@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="zh-Hans">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Monday VRM Fitting Room</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        min-height: 100vh;
+        background: radial-gradient(circle at top, #0f1320, #0a0b10);
+        color: #e7f1ff;
+        font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC", "Heiti SC", "SimHei", "STHeiti", sans-serif;
+        display: grid;
+        place-items: center;
+      }
+      .stage {
+        width: min(720px, 92vw);
+        height: min(880px, 86vh);
+        border-radius: 24px;
+        border: 1px solid rgba(90, 120, 160, 0.35);
+        background: rgba(10, 12, 20, 0.7);
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+        position: relative;
+        overflow: hidden;
+      }
+      .back-btn {
+        position: fixed;
+        top: 18px;
+        left: 18px;
+        z-index: 5;
+        background: rgba(8, 10, 16, 0.8);
+        border: 1px solid rgba(56, 242, 255, 0.4);
+        color: #e7f1ff;
+        padding: 8px 16px;
+        border-radius: 999px;
+        font-size: 12px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        cursor: pointer;
+        text-decoration: none;
+      }
+      #vrmCanvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+        touch-action: none;
+        cursor: grab;
+      }
+      #vrmHint {
+        position: absolute;
+        top: 18px;
+        left: 18px;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: rgba(8, 10, 16, 0.75);
+        border: 1px solid rgba(56, 242, 255, 0.35);
+        color: #9fb0c7;
+        font-size: 12px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+      }
+      #vrmHint.show {
+        opacity: 1;
+      }
+      .note {
+        position: absolute;
+        bottom: 18px;
+        left: 18px;
+        font-size: 12px;
+        color: #9fb0c7;
+        letter-spacing: 1px;
+      }
+    </style>
+  </head>
+  <body>
+    <a class="back-btn" href="/index.html">返回主页面</a>
+    <div class="stage">
+      <canvas id="vrmCanvas"></canvas>
+      <div id="vrmHint">未找到 VRM：请放置 models/monday.vrm</div>
+      <div class="note">Fitting Room - 仅用于 VRM 预览</div>
+    </div>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js",
+          "three/examples/jsm/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/"
+        }
+      }
+    </script>
+    <script src="config.js"></script>
+    <script type="module" src="vrm.js"></script>
+  </body>
+</html>

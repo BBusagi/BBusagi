@@ -9,14 +9,22 @@
   <body>
     <div class="bg">
       <div class="bar-scene" aria-hidden="true"></div>
-      <div class="bar-foreground" aria-hidden="true"></div>
       <div class="bg-grid"></div>
       <div class="bg-glow bg-glow-1"></div>
       <div class="bg-glow bg-glow-2"></div>
       <div class="bg-glow bg-glow-3"></div>
     </div>
 
+    <div class="bar-foreground-layer" aria-hidden="true"></div>
+
     <button class="ui-toggle" id="uiToggle" type="button">隐藏界面</button>
+
+    <aside class="debug-panel">
+      <div class="debug-title">DEBUG</div>
+      <div class="debug-actions">
+        <button class="debug-btn" id="fitBtn" type="button">Fitting Room</button>
+      </div>
+    </aside>
 
     <div class="vrm-stage" aria-hidden="true">
       <canvas id="vrmCanvas"></canvas>
@@ -71,7 +79,7 @@
                 maxlength="400"
               ></textarea>
               <div class="composer-actions">
-                <div class="hint" id="hint">回车发送 · Shift+回车换行</div>
+                <div class="hint">回车发送 · Shift+回车换行</div>
                 <button type="submit" id="sendBtn">上酒</button>
               </div>
             </div>
