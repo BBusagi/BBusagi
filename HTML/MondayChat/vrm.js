@@ -1,20 +1,43 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js";
 import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/loaders/GLTFLoader.js";
+import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/controls/OrbitControls.js";
 import {
   VRMUtils,
   VRMLoaderPlugin,
 } from "https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@3.4.0/lib/three-vrm.module.js";
 
 const canvas = document.getElementById("vrmCanvas");
-const stage = document.querySelector(".vrm-stage");
+const isFittingRoom = !!document.querySelector(".stage") && !document.querySelector(".vrm-stage");
+const stage =
+  document.querySelector(".vrm-stage") ||
+  document.querySelector(".stage") ||
+  canvas.parentElement ||
+  document.body;
 const hint = document.getElementById("vrmHint");
+const setHint = (text) => {
+  if (!hint) return;
+  hint.classList.add("show");
+  hint.textContent = text;
+};
+if (hint) {
+  hint.classList.add("show");
+  hint.textContent = "VRM 加载中...";
+}
 const config = (window.MONDAY_CONFIG && window.MONDAY_CONFIG.vrm) || {};
 
-const renderer = new THREE.WebGLRenderer({
-  canvas,
-  alpha: true,
-  antialias: true,
-});
+let renderer = null;
+try {
+  renderer = new THREE.WebGLRenderer({
+    canvas,
+    alpha: true,
+    antialias: true,
+  });
+} catch (error) {
+  if (hint) {
+    setHint(`WebGL 初始化失败：${error.message || error}`);
+  }
+  throw error;
+}
 const pixelRatioMax = config.pixelRatioMax || 1.5;
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, pixelRatioMax));
 renderer.setClearColor(0x000000, 0);
@@ -24,6 +47,37 @@ const scene = new THREE.Scene();
 const cameraConfig = config.camera || {};
 const camera = new THREE.PerspectiveCamera(cameraConfig.fov || 28, 1, 0.1, 100);
 camera.position.set(...(cameraConfig.position || [0, 1.6, 2.0]));
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enablePan = false;
+controls.enableZoom = true;
+controls.enableRotate = true;
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 1.2;
+controls.maxDistance = 4.0;
+controls.enabled = isFittingRoom;
+
+renderer.domElement.style.pointerEvents = "auto";
+if (stage && stage.style) {
+  stage.style.pointerEvents = "auto";
+}
+if (isFittingRoom) {
+  setHint("可滚轮缩放、拖拽旋转");
+  renderer.domElement.addEventListener("pointerdown", () => {
+    renderer.domElement.style.cursor = "grabbing";
+  });
+  renderer.domElement.addEventListener("pointerup", () => {
+    renderer.domElement.style.cursor = "grab";
+  });
+  renderer.domElement.addEventListener("wheel", () => {
+    setHint("滚轮缩放生效");
+    clearTimeout(renderer.domElement.__hintTimer);
+    renderer.domElement.__hintTimer = setTimeout(() => {
+      setHint("可滚轮缩放、拖拽旋转");
+    }, 1200);
+  }, { passive: true });
+}
 
 const ambient = new THREE.AmbientLight(0xffffff, 0.7);
 scene.add(ambient);
@@ -73,15 +127,20 @@ const loadModel = () => {
       const lookAtYRatio = cameraConfig.lookAtYRatio || 0.7;
       const headTarget = new THREE.Vector3(0, scaledSize.y * lookAtYRatio, 0);
       camera.lookAt(headTarget);
+      controls.target.copy(headTarget);
+      controls.update();
       scene.add(vrm.scene);
 
-      hint.classList.remove("show");
-      hint.textContent = "";
+      if (hint) {
+        hint.classList.remove("show");
+        hint.textContent = "";
+      }
     },
     undefined,
-    () => {
-      hint.classList.add("show");
-      hint.textContent = "未找到 VRM：请放置 models/monday.vrm";
+    (err) => {
+      if (hint) {
+        setHint(`VRM 加载失败：${err?.message || "请检查模型与路径"}`);
+      }
     }
   );
 };
@@ -120,6 +179,7 @@ const animate = () => {
     currentVrm.update(delta);
   }
 
+  controls.update();
   renderer.render(scene, camera);
 };
 
