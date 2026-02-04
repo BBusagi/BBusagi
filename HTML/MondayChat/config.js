@@ -1,5 +1,7 @@
 window.MONDAY_CONFIG = {
   vrm: {
+    //人模模型 配置文件
+    // modelUrl: "./models/officalSample1.vrm",  //官方1.0模型
     modelUrl: "./models/monday.vrm",
     pixelRatioMax: 1.5,
     targetHeight: 1.9,
