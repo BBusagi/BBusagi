@@ -18,18 +18,13 @@
         background: radial-gradient(circle at top, #0f1320, #0a0b10);
         color: #e7f1ff;
         font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC", "Heiti SC", "SimHei", "STHeiti", sans-serif;
-        display: grid;
-        place-items: center;
+        overflow: hidden;
       }
       .stage {
-        width: min(720px, 92vw);
-        height: min(880px, 86vh);
-        border-radius: 24px;
-        border: 1px solid rgba(90, 120, 160, 0.35);
-        background: rgba(10, 12, 20, 0.7);
-        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
-        position: relative;
-        overflow: hidden;
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
       }
       .back-btn {
         position: fixed;
@@ -56,8 +51,9 @@
       }
       #vrmHint {
         position: absolute;
-        top: 18px;
+        bottom: 18px;
         left: 18px;
+        top: auto;
         padding: 6px 12px;
         border-radius: 999px;
         background: rgba(8, 10, 16, 0.75);
@@ -74,7 +70,7 @@
       }
       .note {
         position: absolute;
-        bottom: 18px;
+        bottom: 48px;
         left: 18px;
         font-size: 12px;
         color: #9fb0c7;
