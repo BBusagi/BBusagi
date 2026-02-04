@@ -318,11 +318,17 @@ const loadModel = () => {
     (gltf) => {
       const vrm = gltf.userData.vrm;
       VRMUtils.removeUnnecessaryVertices(gltf.scene);
+      VRMUtils.combineSkeletons(gltf.scene);
+      VRMUtils.combineMorphs(vrm);
 
       currentVrm = vrm;
       vrm.scene.rotation.y = MODEL_Y_ROTATION;
       resetShoulderRot();
       applyIdlePose(vrm);
+
+      vrm.scene.traverse((obj) => {
+        obj.frustumCulled = false;
+      });
 
       const box = new THREE.Box3().setFromObject(vrm.scene);
       const size = box.getSize(new THREE.Vector3());
@@ -431,41 +437,99 @@ const MIXAMO_TO_VRM = {
   mixamorigRightToeBase: "rightToes",
 };
 
-const remapMixamoClipToVrm = (clip) => {
+const remapMixamoClipToVrm = (fbx, clip) => {
   if (!currentVrm) return clip;
   const tracks = [];
+  const rigCache = new Map();
+  const hipsSrc = fbx.getObjectByName("mixamorigHips");
+  const hipsDst = currentVrm.humanoid?.getNormalizedBoneNode("hips");
+  let hipsScale = 1;
+  if (hipsSrc && hipsDst) {
+    const srcPos = new THREE.Vector3();
+    const dstPos = new THREE.Vector3();
+    hipsSrc.getWorldPosition(srcPos);
+    hipsDst.getWorldPosition(dstPos);
+    const srcY = Math.max(0.001, Math.abs(srcPos.y));
+    const dstY = Math.max(0.001, Math.abs(dstPos.y));
+    hipsScale = dstY / srcY;
+  }
+
   for (const track of clip.tracks) {
     const [srcName, prop] = track.name.split(".");
     const vrmBoneName = MIXAMO_TO_VRM[srcName];
     if (!vrmBoneName) continue;
-    const node = currentVrm.humanoid?.getNormalizedBoneNode(vrmBoneName);
-    if (!node) continue;
-    // Drop all position tracks to avoid teleporting the avatar.
-    if (prop === "position") continue;
-    if (prop === "quaternion") {
-      const cloned = track.clone();
-      cloned.name = `${node.name}.quaternion`;
-      tracks.push(cloned);
+    const srcNode = fbx.getObjectByName(srcName);
+    const dstNode = currentVrm.humanoid?.getNormalizedBoneNode(vrmBoneName);
+    if (!srcNode || !dstNode) continue;
+
+    let cache = rigCache.get(srcName);
+    if (!cache) {
+      const restRotationInverse = new THREE.Quaternion();
+      const parentRestWorldRotation = new THREE.Quaternion();
+      srcNode.getWorldQuaternion(restRotationInverse).invert();
+      if (srcNode.parent) {
+        srcNode.parent.getWorldQuaternion(parentRestWorldRotation);
+      } else {
+        parentRestWorldRotation.identity();
+      }
+      cache = { restRotationInverse, parentRestWorldRotation };
+      rigCache.set(srcName, cache);
+    }
+
+    if (prop === "position") {
+      if (vrmBoneName !== "hips") continue;
+      const posTrack = track.clone();
+      posTrack.name = `${dstNode.name}.position`;
+      for (let i = 0; i < posTrack.values.length; i += 3) {
+        posTrack.values[i] *= hipsScale;
+        posTrack.values[i + 1] *= hipsScale;
+        posTrack.values[i + 2] *= hipsScale;
+      }
+      tracks.push(posTrack);
       continue;
     }
+
+    if (prop === "quaternion") {
+      const times = track.times;
+      const values = track.values;
+      const mapped = new Float32Array(values.length);
+      const q = new THREE.Quaternion();
+      for (let i = 0; i < values.length; i += 4) {
+        q.set(values[i], values[i + 1], values[i + 2], values[i + 3]);
+        q.premultiply(cache.parentRestWorldRotation).multiply(cache.restRotationInverse);
+        mapped[i] = q.x;
+        mapped[i + 1] = q.y;
+        mapped[i + 2] = q.z;
+        mapped[i + 3] = q.w;
+      }
+      const qTrack = new THREE.QuaternionKeyframeTrack(
+        `${dstNode.name}.quaternion`,
+        times,
+        mapped
+      );
+      tracks.push(qTrack);
+      continue;
+    }
+
     if (prop === "rotation") {
       const times = track.times;
       const values = track.values;
-      const quats = new Float32Array((values.length / 3) * 4);
+      const mapped = new Float32Array((values.length / 3) * 4);
       const euler = new THREE.Euler();
-      const quat = new THREE.Quaternion();
+      const q = new THREE.Quaternion();
       for (let i = 0, j = 0; i < values.length; i += 3, j += 4) {
         euler.set(values[i], values[i + 1], values[i + 2], "XYZ");
-        quat.setFromEuler(euler);
-        quats[j] = quat.x;
-        quats[j + 1] = quat.y;
-        quats[j + 2] = quat.z;
-        quats[j + 3] = quat.w;
+        q.setFromEuler(euler);
+        q.premultiply(cache.parentRestWorldRotation).multiply(cache.restRotationInverse);
+        mapped[j] = q.x;
+        mapped[j + 1] = q.y;
+        mapped[j + 2] = q.z;
+        mapped[j + 3] = q.w;
       }
       const qTrack = new THREE.QuaternionKeyframeTrack(
-        `${node.name}.quaternion`,
+        `${dstNode.name}.quaternion`,
         times,
-        quats
+        mapped
       );
       tracks.push(qTrack);
     }
@@ -475,7 +539,7 @@ const remapMixamoClipToVrm = (clip) => {
 
 const playFbxAnimation = (fileName) => {
   if (!currentVrm || !mixer) return;
-  currentVrm.humanoid?.resetPose();
+  currentVrm.humanoid?.resetNormalizedPose();
   const url = `./animation/${encodeURIComponent(fileName)}`;
   fbxLoader.load(
     url,
@@ -485,7 +549,7 @@ const playFbxAnimation = (fileName) => {
         console.warn("[vrm:anim] no animation clip in", fileName);
         return;
       }
-      const mapped = remapMixamoClipToVrm(clip);
+      const mapped = remapMixamoClipToVrm(fbx, clip);
       if (mapped.tracks.length === 0) {
         console.warn("[vrm:anim] no usable tracks after remap", fileName);
         return;
