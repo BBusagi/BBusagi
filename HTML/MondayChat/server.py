@@ -87,7 +87,10 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
     def _send_file(self, path):
+        print(f"Attempting to serve: {path}")
+        print(f"Path exists: {path.exists()}, Is file: {path.is_file()}")
         if not path.exists() or not path.is_file():
+            print("Path check failed, sending 404")
             self.send_error(404)
             return
 

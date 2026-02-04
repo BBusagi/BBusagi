@@ -121,6 +121,6 @@ uiToggle.addEventListener("click", () => {
 if (fitBtn) {
   fitBtn.addEventListener("click", (event) => {
     event.stopPropagation();
-    window.location.assign("/fittingroom.html");
+    window.location.assign("fittingroom.html");
   });
 }

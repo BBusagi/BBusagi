@@ -292,7 +292,29 @@ const applyIdlePose = (vrm) => {
   const humanoid = vrm.humanoid;
   if (!humanoid) return;
 
-  // Intentionally keep default bind pose; no joint overrides here.
+  // Get the arm bones
+  const leftUpperArm = humanoid.getNormalizedBoneNode("leftUpperArm");
+  const rightUpperArm = humanoid.getNormalizedBoneNode("rightUpperArm");
+  const leftLowerArm = humanoid.getNormalizedBoneNode("leftLowerArm");
+  const rightLowerArm = humanoid.getNormalizedBoneNode("rightLowerArm");
+
+  // Rotate the arms down and slightly out to avoid clipping
+  if (leftUpperArm) {
+    leftUpperArm.rotation.x = -0.2;  // A bit forward
+    leftUpperArm.rotation.y = -0.2;  // A bit out
+    leftUpperArm.rotation.z = -1.5; // Rotate down
+  }
+  if (rightUpperArm) {
+    rightUpperArm.rotation.x = -0.2;  // A bit forward
+    rightUpperArm.rotation.y = 0.2;   // A bit out
+    rightUpperArm.rotation.z = 1.5;  // Rotate down
+  }
+  if (leftLowerArm) {
+    leftLowerArm.rotation.z = -0.2;
+  }
+  if (rightLowerArm) {
+    rightLowerArm.rotation.z = 0.2;
+  }
 };
 
 const loadModel = () => {
