@@ -377,6 +377,15 @@ const initAnimationPanel = () => {
     if (!btn) return;
     const fileName = btn.getAttribute("data-anim");
     if (!fileName) return;
+    if (fileName === "__TPOSE__") {
+      if (currentAction) {
+        currentAction.fadeOut(0.2);
+        currentAction = null;
+      }
+      currentVrm?.humanoid?.resetNormalizedPose();
+      console.log("[vrm:anim] reset to T-pose");
+      return;
+    }
     playFbxAnimation(fileName);
   });
 };
