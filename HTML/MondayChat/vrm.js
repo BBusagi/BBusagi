@@ -274,6 +274,7 @@ let currentVrm = null;
 let modelBasePosition = new THREE.Vector3(0, 0, 0);
 let mixer = null;
 let currentAction = null;
+let hipsBasePosition = null;
 const clock = new THREE.Clock();
 const modelConfig = config.model || {};
 const readStoredVector = (key) => {
@@ -343,6 +344,8 @@ const loadModel = () => {
       vrm.scene.position.y += scaledSize.y / 2;
       modelBasePosition.copy(vrm.scene.position);
       vrm.scene.position.add(MODEL_OFFSET);
+      const hips = currentVrm.humanoid?.getNormalizedBoneNode("hips");
+      hipsBasePosition = hips ? hips.position.clone() : null;
 
       const lookAtYRatio = cameraConfig.lookAtYRatio || 0.7;
       const headTarget = new THREE.Vector3(0, scaledSize.y * lookAtYRatio, 0);
@@ -617,6 +620,13 @@ const animate = () => {
 
   if (mixer) {
     mixer.update(delta);
+  }
+
+  if (currentVrm && hipsBasePosition) {
+    const hips = currentVrm.humanoid?.getNormalizedBoneNode("hips");
+    if (hips) {
+      hips.position.copy(hipsBasePosition);
+    }
   }
 
   controls.update();
