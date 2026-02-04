@@ -1,5 +1,6 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js";
 import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/loaders/GLTFLoader.js";
+import { FBXLoader } from "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/loaders/FBXLoader.js";
 import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/controls/OrbitControls.js";
 import {
   VRMUtils,
@@ -271,6 +272,8 @@ scene.add(rimLight);
 
 let currentVrm = null;
 let modelBasePosition = new THREE.Vector3(0, 0, 0);
+let mixer = null;
+let currentAction = null;
 const clock = new THREE.Clock();
 const modelConfig = config.model || {};
 const readStoredVector = (key) => {
@@ -300,34 +303,12 @@ const resetShoulderRot = () => {
 
 const loader = new GLTFLoader();
 loader.register((parser) => new VRMLoaderPlugin(parser));
+const fbxLoader = new FBXLoader();
 
 const applyIdlePose = (vrm) => {
   const humanoid = vrm.humanoid;
   if (!humanoid) return;
-
-  // Get the arm bones
-  const leftUpperArm = humanoid.getNormalizedBoneNode("leftUpperArm");
-  const rightUpperArm = humanoid.getNormalizedBoneNode("rightUpperArm");
-  const leftLowerArm = humanoid.getNormalizedBoneNode("leftLowerArm");
-  const rightLowerArm = humanoid.getNormalizedBoneNode("rightLowerArm");
-
-  // Rotate the arms down and slightly out to avoid clipping
-  if (leftUpperArm) {
-    leftUpperArm.rotation.x = -0.2;  // A bit forward
-    leftUpperArm.rotation.y = -0.2;  // A bit out
-    leftUpperArm.rotation.z = -1.5; // Rotate down
-  }
-  if (rightUpperArm) {
-    rightUpperArm.rotation.x = -0.2;  // A bit forward
-    rightUpperArm.rotation.y = 0.2;   // A bit out
-    rightUpperArm.rotation.z = 1.5;  // Rotate down
-  }
-  if (leftLowerArm) {
-    leftLowerArm.rotation.z = -0.2;
-  }
-  if (rightLowerArm) {
-    rightLowerArm.rotation.z = 0.2;
-  }
+  humanoid.resetPose();
 };
 
 const loadModel = () => {
@@ -365,6 +346,9 @@ const loadModel = () => {
       applyDefaultDistance();
       scene.add(vrm.scene);
 
+      mixer = new THREE.AnimationMixer(vrm.scene);
+      initAnimationPanel();
+
       if (hint) {
         hint.classList.remove("show");
         hint.textContent = "";
@@ -375,6 +359,147 @@ const loadModel = () => {
       if (hint) {
         setHint(`VRM 加载失败：${err?.message || "请检查模型与路径"}`);
       }
+    }
+  );
+};
+
+const initAnimationPanel = () => {
+  const panel = document.getElementById("animPanel");
+  if (!panel || !mixer) return;
+  panel.addEventListener("click", (event) => {
+    const btn = event.target.closest("[data-anim]");
+    if (!btn) return;
+    const fileName = btn.getAttribute("data-anim");
+    if (!fileName) return;
+    playFbxAnimation(fileName);
+  });
+};
+
+const MIXAMO_TO_VRM = {
+  mixamorigHips: "hips",
+  mixamorigSpine: "spine",
+  mixamorigSpine1: "chest",
+  mixamorigSpine2: "upperChest",
+  mixamorigSpine3: "upperChest",
+  mixamorigNeck: "neck",
+  mixamorigHead: "head",
+  mixamorigLeftShoulder: "leftShoulder",
+  mixamorigLeftArm: "leftUpperArm",
+  mixamorigLeftForeArm: "leftLowerArm",
+  mixamorigLeftHand: "leftHand",
+  mixamorigLeftHandThumb1: "leftThumbMetacarpal",
+  mixamorigLeftHandThumb2: "leftThumbProximal",
+  mixamorigLeftHandThumb3: "leftThumbDistal",
+  mixamorigLeftHandIndex1: "leftIndexProximal",
+  mixamorigLeftHandIndex2: "leftIndexIntermediate",
+  mixamorigLeftHandIndex3: "leftIndexDistal",
+  mixamorigLeftHandMiddle1: "leftMiddleProximal",
+  mixamorigLeftHandMiddle2: "leftMiddleIntermediate",
+  mixamorigLeftHandMiddle3: "leftMiddleDistal",
+  mixamorigLeftHandRing1: "leftRingProximal",
+  mixamorigLeftHandRing2: "leftRingIntermediate",
+  mixamorigLeftHandRing3: "leftRingDistal",
+  mixamorigLeftHandPinky1: "leftLittleProximal",
+  mixamorigLeftHandPinky2: "leftLittleIntermediate",
+  mixamorigLeftHandPinky3: "leftLittleDistal",
+  mixamorigRightShoulder: "rightShoulder",
+  mixamorigRightArm: "rightUpperArm",
+  mixamorigRightForeArm: "rightLowerArm",
+  mixamorigRightHand: "rightHand",
+  mixamorigRightHandThumb1: "rightThumbMetacarpal",
+  mixamorigRightHandThumb2: "rightThumbProximal",
+  mixamorigRightHandThumb3: "rightThumbDistal",
+  mixamorigRightHandIndex1: "rightIndexProximal",
+  mixamorigRightHandIndex2: "rightIndexIntermediate",
+  mixamorigRightHandIndex3: "rightIndexDistal",
+  mixamorigRightHandMiddle1: "rightMiddleProximal",
+  mixamorigRightHandMiddle2: "rightMiddleIntermediate",
+  mixamorigRightHandMiddle3: "rightMiddleDistal",
+  mixamorigRightHandRing1: "rightRingProximal",
+  mixamorigRightHandRing2: "rightRingIntermediate",
+  mixamorigRightHandRing3: "rightRingDistal",
+  mixamorigRightHandPinky1: "rightLittleProximal",
+  mixamorigRightHandPinky2: "rightLittleIntermediate",
+  mixamorigRightHandPinky3: "rightLittleDistal",
+  mixamorigLeftUpLeg: "leftUpperLeg",
+  mixamorigLeftLeg: "leftLowerLeg",
+  mixamorigLeftFoot: "leftFoot",
+  mixamorigLeftToeBase: "leftToes",
+  mixamorigRightUpLeg: "rightUpperLeg",
+  mixamorigRightLeg: "rightLowerLeg",
+  mixamorigRightFoot: "rightFoot",
+  mixamorigRightToeBase: "rightToes",
+};
+
+const remapMixamoClipToVrm = (clip) => {
+  if (!currentVrm) return clip;
+  const tracks = [];
+  for (const track of clip.tracks) {
+    const [srcName, prop] = track.name.split(".");
+    const vrmBoneName = MIXAMO_TO_VRM[srcName];
+    if (!vrmBoneName) continue;
+    const node = currentVrm.humanoid?.getNormalizedBoneNode(vrmBoneName);
+    if (!node) continue;
+    // Drop all position tracks to avoid teleporting the avatar.
+    if (prop === "position") continue;
+    if (prop === "quaternion") {
+      const cloned = track.clone();
+      cloned.name = `${node.name}.quaternion`;
+      tracks.push(cloned);
+      continue;
+    }
+    if (prop === "rotation") {
+      const times = track.times;
+      const values = track.values;
+      const quats = new Float32Array((values.length / 3) * 4);
+      const euler = new THREE.Euler();
+      const quat = new THREE.Quaternion();
+      for (let i = 0, j = 0; i < values.length; i += 3, j += 4) {
+        euler.set(values[i], values[i + 1], values[i + 2], "XYZ");
+        quat.setFromEuler(euler);
+        quats[j] = quat.x;
+        quats[j + 1] = quat.y;
+        quats[j + 2] = quat.z;
+        quats[j + 3] = quat.w;
+      }
+      const qTrack = new THREE.QuaternionKeyframeTrack(
+        `${node.name}.quaternion`,
+        times,
+        quats
+      );
+      tracks.push(qTrack);
+    }
+  }
+  return new THREE.AnimationClip(`${clip.name}_vrm`, clip.duration, tracks);
+};
+
+const playFbxAnimation = (fileName) => {
+  if (!currentVrm || !mixer) return;
+  currentVrm.humanoid?.resetPose();
+  const url = `./animation/${encodeURIComponent(fileName)}`;
+  fbxLoader.load(
+    url,
+    (fbx) => {
+      const clip = fbx.animations && fbx.animations[0];
+      if (!clip) {
+        console.warn("[vrm:anim] no animation clip in", fileName);
+        return;
+      }
+      const mapped = remapMixamoClipToVrm(clip);
+      if (mapped.tracks.length === 0) {
+        console.warn("[vrm:anim] no usable tracks after remap", fileName);
+        return;
+      }
+      if (currentAction) {
+        currentAction.fadeOut(0.2);
+      }
+      currentAction = mixer.clipAction(mapped);
+      currentAction.reset().fadeIn(0.2).play();
+      console.log("[vrm:anim] playing", fileName);
+    },
+    undefined,
+    (err) => {
+      console.error("[vrm:anim] failed to load", fileName, err);
     }
   );
 };
@@ -415,6 +540,10 @@ const animate = () => {
     }
 
     currentVrm.update(delta);
+  }
+
+  if (mixer) {
+    mixer.update(delta);
   }
 
   controls.update();

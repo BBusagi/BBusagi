@@ -42,6 +42,40 @@
         cursor: pointer;
         text-decoration: none;
       }
+      .anim-panel {
+        position: fixed;
+        top: 18px;
+        right: 18px;
+        z-index: 6;
+        background: rgba(8, 10, 16, 0.8);
+        border: 1px solid rgba(56, 242, 255, 0.3);
+        border-radius: 14px;
+        padding: 10px 12px;
+        width: 220px;
+        color: #e7f1ff;
+        font-size: 12px;
+      }
+      .anim-title {
+        font-size: 11px;
+        letter-spacing: 2px;
+        color: #9fb0c7;
+        margin-bottom: 8px;
+      }
+      .anim-list {
+        display: grid;
+        gap: 8px;
+      }
+      .anim-btn {
+        background: rgba(10, 14, 24, 0.8);
+        border: 1px solid rgba(56, 242, 255, 0.35);
+        color: #e7f1ff;
+        padding: 6px 10px;
+        border-radius: 10px;
+        font-size: 12px;
+        letter-spacing: 1px;
+        cursor: pointer;
+        text-align: left;
+      }
       #vrmCanvas {
         width: 100%;
         height: 100%;
@@ -94,6 +128,14 @@
   </head>
   <body>
     <a class="back-btn" href="index.html">返回主页面</a>
+    <aside class="anim-panel" id="animPanel">
+      <div class="anim-title">ANIMATIONS</div>
+      <div class="anim-list">
+        <button class="anim-btn" data-anim="Female Standing Pose.fbx" type="button">Female Standing Pose</button>
+        <button class="anim-btn" data-anim="Salute.fbx" type="button">Salute</button>
+        <button class="anim-btn" data-anim="Using A Fax Machine.fbx" type="button">Using A Fax Machine</button>
+      </div>
+    </aside>
     <div class="stage">
       <canvas id="vrmCanvas"></canvas>
       <div id="vrmHint">未找到 VRM：请放置 models/monday.vrm</div>
