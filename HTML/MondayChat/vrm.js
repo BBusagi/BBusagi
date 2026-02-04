@@ -18,6 +18,7 @@ const setHint = (text) => {
   if (!hint) return;
   hint.classList.add("show");
   hint.textContent = text;
+  console.log("[vrm:hint]", text);
 };
 if (hint) {
   hint.classList.add("show");
@@ -61,6 +62,22 @@ controls.minDistance = 1.2;
 controls.maxDistance = 4.0;
 controls.enabled = true;
 
+const zoomReadout = document.getElementById("zoomReadout");
+const updateZoomReadout = () => {
+  if (!zoomReadout) return;
+  const dist = controls.getDistance();
+  zoomReadout.textContent = `距离: ${dist.toFixed(2)}`;
+  console.log("[vrm:zoom]", dist.toFixed(2));
+};
+const defaultDistance = 2.35;
+const applyDefaultDistance = () => {
+  const dir = camera.position.clone().sub(controls.target).normalize();
+  camera.position.copy(controls.target).add(dir.multiplyScalar(defaultDistance));
+  camera.updateProjectionMatrix();
+  controls.update();
+  updateZoomReadout();
+};
+
 renderer.domElement.style.pointerEvents = "auto";
 if (stage && stage.style) {
   stage.style.pointerEvents = "auto";
@@ -75,11 +92,7 @@ renderer.domElement.addEventListener("pointerup", () => {
 renderer.domElement.addEventListener(
   "wheel",
   () => {
-    setHint("滚轮缩放生效");
-    clearTimeout(renderer.domElement.__hintTimer);
-    renderer.domElement.__hintTimer = setTimeout(() => {
-      setHint("拖拽旋转 · 滚轮缩放 · WASD 移动");
-    }, 1200);
+    updateZoomReadout();
   },
   { passive: true }
 );
@@ -349,6 +362,7 @@ const loadModel = () => {
       camera.lookAt(headTarget);
       controls.target.copy(headTarget);
       controls.update();
+      applyDefaultDistance();
       scene.add(vrm.scene);
 
       if (hint) {
@@ -404,6 +418,7 @@ const animate = () => {
   }
 
   controls.update();
+  updateZoomReadout();
   renderer.render(scene, camera);
 };
 

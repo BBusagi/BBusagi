@@ -31,6 +31,7 @@ const addMessage = (role, text) => {
   message.appendChild(bubble);
   chatBody.appendChild(message);
   chatBody.scrollTop = chatBody.scrollHeight;
+  console.log(`[chat:${role}]`, text);
 };
 
 const updateSummary = (userText) => {
@@ -86,6 +87,7 @@ composer.addEventListener("submit", async (event) => {
     updateMeta();
   } catch (error) {
     addMessage("assistant", `接口出错：${error.message}`);
+    console.error("[chat:error]", error);
   } finally {
     setBusy(false);
   }

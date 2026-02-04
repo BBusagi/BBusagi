@@ -10,7 +10,7 @@ window.MONDAY_CONFIG = {
     },
     model: {
       yRotation: 0,
-      offset: [0, 0, 0],
+      offset: [0, -0.06, 0],
     },
   },
 };
