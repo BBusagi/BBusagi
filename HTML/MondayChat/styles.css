@@ -203,6 +203,20 @@ body {
   color: var(--ink-3);
 }
 
+.zoom-readout {
+  position: absolute;
+  left: 18px;
+  bottom: 18px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(8, 10, 16, 0.7);
+  border: 1px solid rgba(56, 242, 255, 0.25);
+  color: var(--ink-2);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
 
 
 .ui-hidden .app,

@@ -76,6 +76,19 @@
         color: #9fb0c7;
         letter-spacing: 1px;
       }
+      .zoom-readout {
+        position: absolute;
+        left: 18px;
+        bottom: 18px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: rgba(8, 10, 16, 0.7);
+        border: 1px solid rgba(56, 242, 255, 0.25);
+        color: #9fb0c7;
+        font-size: 11px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+      }
 
     </style>
   </head>
@@ -84,6 +97,7 @@
     <div class="stage">
       <canvas id="vrmCanvas"></canvas>
       <div id="vrmHint">未找到 VRM：请放置 models/monday.vrm</div>
+      <div class="zoom-readout" id="zoomReadout">距离: -</div>
       <div class="note">Fitting Room - 仅用于 VRM 预览</div>
     </div>
 
