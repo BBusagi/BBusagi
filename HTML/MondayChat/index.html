@@ -17,15 +17,14 @@
 
     <div class="bar-foreground-layer" aria-hidden="true"></div>
 
-    <button class="ui-toggle" id="uiToggle" type="button">隐藏界面</button>
-
-    <aside class="debug-panel">
-      <div class="debug-title">DEBUG</div>
-      <div class="debug-actions">
-        <button class="debug-btn" id="fitBtn" type="button">Fitting Room</button>
-        <button class="debug-btn" id="moveToggleBtn" type="button">开启位移</button>
-        <button class="debug-btn" id="saveOffsetBtn" type="button">保存当前位置</button>
-        <div class="debug-readout" id="offsetReadout">offset: (0, 0, 0)</div>
+    <aside class="menu-panel" id="menuPanel">
+      <div class="menu-title">MENU</div>
+      <div class="menu-actions">
+        <button class="menu-btn" id="uiToggle" type="button">隐藏界面</button>
+        <button class="menu-btn" id="fitBtn" type="button">Fitting Room</button>
+        <button class="menu-btn" id="moveToggleBtn" type="button">开启位移</button>
+        <button class="menu-btn" id="saveOffsetBtn" type="button">保存当前位置</button>
+        <div class="menu-readout" id="offsetReadout">offset: (0, 0, 0)</div>
       </div>
     </aside>
 
@@ -66,6 +65,15 @@
               只做文字，不哄人，不陪笑。你可以说，但别指望她顺着你。
             </div>
           </div>
+          <div class="status-panel">
+            <div class="status-title">状态</div>
+          <div class="status-row">
+            <span class="status-dot"></span>
+            <span id="mondayStatus">闲置</span>
+          </div>
+          <div class="status-sub" id="mondayStatusSub">等待输入</div>
+          <div class="status-sub" id="mondayPad">PAD: 0.00 / 0.00 / 0.00</div>
+        </div>
         </aside>
 
         <section class="chat">
