@@ -375,11 +375,38 @@ const loadModel = () => {
 const initAnimationPanel = () => {
   const panel = document.getElementById("animPanel");
   if (!panel || !mixer) return;
+  if (!autoListenerAttached) {
+    mixer.addEventListener("finished", () => {
+      if (!autoMode) return;
+      scheduleNextAuto(autoRunId);
+    });
+    autoListenerAttached = true;
+  }
   panel.addEventListener("click", (event) => {
     const btn = event.target.closest("[data-anim]");
     if (!btn) return;
     const fileName = btn.getAttribute("data-anim");
     if (!fileName) return;
+    if (fileName !== "__AUTO__") {
+      stopAuto();
+    }
+    if (fileName === "__AUTO__") {
+      if (autoMode) {
+        stopAuto();
+      } else {
+        autoMode = true;
+        autoRunId += 1;
+        autoPool = buildAutoPool();
+        if (!autoPool.length) {
+          setHint("未找到可用动画");
+          autoMode = false;
+          return;
+        }
+        updateAutoButton(true);
+        scheduleNextAuto(autoRunId, true);
+      }
+      return;
+    }
     if (fileName === "__TPOSE__") {
       if (currentAction) {
         currentAction.fadeOut(0.2);
@@ -549,13 +576,15 @@ const remapMixamoClipToVrm = (fbx, clip) => {
   return new THREE.AnimationClip(`${clip.name}_vrm`, clip.duration, tracks);
 };
 
-const playFbxAnimation = (fileName) => {
+const playFbxAnimation = (fileName, options = {}) => {
   if (!currentVrm || !mixer) return;
-  currentVrm.humanoid?.resetNormalizedPose();
   const url = `./animation/${encodeURIComponent(fileName)}`;
   fbxLoader.load(
     url,
     (fbx) => {
+      if (options.autoRunId !== undefined) {
+        if (!autoMode || options.autoRunId !== autoRunId) return;
+      }
       const clip = fbx.animations && fbx.animations[0];
       if (!clip) {
         console.warn("[vrm:anim] no animation clip in", fileName);
@@ -566,11 +595,21 @@ const playFbxAnimation = (fileName) => {
         console.warn("[vrm:anim] no usable tracks after remap", fileName);
         return;
       }
-      if (currentAction) {
-        currentAction.fadeOut(0.2);
-      }
+      const prevAction = currentAction;
       currentAction = mixer.clipAction(mapped);
-      currentAction.reset().fadeIn(0.2).play();
+      if (options.loopOnce) {
+        currentAction.setLoop(THREE.LoopOnce, 1);
+        currentAction.clampWhenFinished = true;
+      } else {
+        currentAction.setLoop(THREE.LoopRepeat, Infinity);
+        currentAction.clampWhenFinished = false;
+      }
+      currentAction.reset().play();
+      if (prevAction && prevAction !== currentAction) {
+        prevAction.crossFadeTo(currentAction, 0.25, false);
+      } else {
+        currentAction.fadeIn(0.2);
+      }
       console.log("[vrm:anim] playing", fileName);
     },
     undefined,
@@ -593,6 +632,67 @@ resize();
 loadModel();
 
 let running = true;
+let autoMode = false;
+let autoTimer = null;
+let autoPool = [];
+let autoRunId = 0;
+let autoListenerAttached = false;
+let lastAutoFile = null;
+
+const buildAutoPool = () => {
+  const panel = document.getElementById("animPanel");
+  if (!panel) return [];
+  return Array.from(panel.querySelectorAll("[data-anim]"))
+    .map((btn) => btn.getAttribute("data-anim"))
+    .filter((fileName) => fileName && fileName !== "__TPOSE__" && fileName !== "__AUTO__");
+};
+
+const pickAutoFile = () => {
+  if (!autoPool.length) return null;
+  if (autoPool.length === 1) return autoPool[0];
+  let next = autoPool[Math.floor(Math.random() * autoPool.length)];
+  if (next === lastAutoFile) {
+    next = autoPool[(autoPool.indexOf(next) + 1) % autoPool.length];
+  }
+  return next;
+};
+
+const updateAutoButton = (active) => {
+  const panel = document.getElementById("animPanel");
+  const autoBtn = panel?.querySelector('[data-anim="__AUTO__"]');
+  if (!autoBtn) return;
+  autoBtn.classList.toggle("is-active", active);
+};
+
+const stopAuto = () => {
+  if (!autoMode) return;
+  autoMode = false;
+  autoRunId += 1;
+  if (autoTimer) {
+    clearTimeout(autoTimer);
+    autoTimer = null;
+  }
+  updateAutoButton(false);
+};
+
+const scheduleNextAuto = (runId, immediate = false) => {
+  if (!autoMode || runId !== autoRunId) return;
+  if (autoTimer) {
+    clearTimeout(autoTimer);
+    autoTimer = null;
+  }
+  const delay = immediate ? 100 : 250 + Math.random() * 450;
+  autoTimer = setTimeout(() => {
+    if (!autoMode || runId !== autoRunId) return;
+    const next = pickAutoFile();
+    if (!next) {
+      stopAuto();
+      return;
+    }
+    lastAutoFile = next;
+    playFbxAnimation(next, { loopOnce: true, autoRunId: runId });
+  }, delay);
+};
 
 const animate = () => {
   if (!running) return;
