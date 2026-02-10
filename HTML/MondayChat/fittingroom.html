@@ -82,6 +82,16 @@
         color: #f4fbff;
         box-shadow: 0 0 0 1px rgba(56, 242, 255, 0.2);
       }
+      .anim-btn.is-auto {
+        background: rgba(120, 88, 255, 0.18);
+        border-color: rgba(120, 88, 255, 0.7);
+        color: #f7f3ff;
+      }
+      .anim-btn.is-auto.is-active {
+        background: rgba(120, 88, 255, 0.35);
+        border-color: rgba(120, 88, 255, 1);
+        box-shadow: 0 0 0 1px rgba(120, 88, 255, 0.35);
+      }
       #vrmCanvas {
         width: 100%;
         height: 100%;
@@ -136,11 +146,13 @@
     <a class="back-btn" href="index.html">返回主页面</a>
     <aside class="anim-panel" id="animPanel">
       <div class="anim-title">ANIMATIONS</div>
-      <div class="anim-list">
-        <button class="anim-btn" data-anim="__AUTO__" type="button">Auto</button>
+      <div class="anim-list" id="animList">
+        <button class="anim-btn is-auto" data-anim="__AUTO__" type="button">Auto</button>
         <button class="anim-btn" data-anim="__TPOSE__" type="button">T-Pose</button>
         <button class="anim-btn" data-anim="Female Standing Pose.fbx" type="button">Female Standing Pose</button>
+        <button class="anim-btn" data-anim="Idle.fbx" type="button">Idle</button>
         <button class="anim-btn" data-anim="Salute.fbx" type="button">Salute</button>
+        <button class="anim-btn" data-anim="Slow Run.fbx" type="button">Slow Run</button>
         <button class="anim-btn" data-anim="Standing Greeting.fbx" type="button">Standing Greeting</button>
         <button class="anim-btn" data-anim="Using A Fax Machine.fbx" type="button">Using A Fax Machine</button>
       </div>
