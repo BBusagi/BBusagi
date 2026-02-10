@@ -76,6 +76,12 @@
         cursor: pointer;
         text-align: left;
       }
+      .anim-btn.is-active {
+        background: rgba(56, 242, 255, 0.15);
+        border-color: rgba(56, 242, 255, 0.7);
+        color: #f4fbff;
+        box-shadow: 0 0 0 1px rgba(56, 242, 255, 0.2);
+      }
       #vrmCanvas {
         width: 100%;
         height: 100%;
@@ -131,6 +137,7 @@
     <aside class="anim-panel" id="animPanel">
       <div class="anim-title">ANIMATIONS</div>
       <div class="anim-list">
+        <button class="anim-btn" data-anim="__AUTO__" type="button">Auto</button>
         <button class="anim-btn" data-anim="__TPOSE__" type="button">T-Pose</button>
         <button class="anim-btn" data-anim="Female Standing Pose.fbx" type="button">Female Standing Pose</button>
         <button class="anim-btn" data-anim="Salute.fbx" type="button">Salute</button>
