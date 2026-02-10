@@ -375,13 +375,7 @@ const loadModel = () => {
 const initAnimationPanel = () => {
   const panel = document.getElementById("animPanel");
   if (!panel || !mixer) return;
-  if (!autoListenerAttached) {
-    mixer.addEventListener("finished", () => {
-      if (!autoMode) return;
-      scheduleNextAuto(autoRunId);
-    });
-    autoListenerAttached = true;
-  }
+  syncAnimationList();
   panel.addEventListener("click", (event) => {
     const btn = event.target.closest("[data-anim]");
     if (!btn) return;
@@ -403,7 +397,7 @@ const initAnimationPanel = () => {
           return;
         }
         updateAutoButton(true);
-        scheduleNextAuto(autoRunId, true);
+        scheduleNextAuto(autoRunId, 150);
       }
       return;
     }
@@ -610,6 +604,12 @@ const playFbxAnimation = (fileName, options = {}) => {
       } else {
         currentAction.fadeIn(0.2);
       }
+      if (options.autoRunId !== undefined && autoMode) {
+        const durationMs = Math.max(1000, mapped.duration * 1000);
+        const jitter = 0.6 + Math.random() * 0.8;
+        const delayMs = Math.min(12000, Math.max(2000, durationMs * jitter));
+        scheduleNextAuto(options.autoRunId, delayMs);
+      }
       console.log("[vrm:anim] playing", fileName);
     },
     undefined,
@@ -636,8 +636,16 @@ let autoMode = false;
 let autoTimer = null;
 let autoPool = [];
 let autoRunId = 0;
-let autoListenerAttached = false;
 let lastAutoFile = null;
+const listEl = document.getElementById("animList");
+
+const getStaticButtons = () => {
+  if (!listEl) return [];
+  return Array.from(listEl.querySelectorAll("[data-anim]")).map((btn) => ({
+    file: btn.getAttribute("data-anim"),
+    label: btn.textContent?.trim() || btn.getAttribute("data-anim"),
+  }));
+};
 
 const buildAutoPool = () => {
   const panel = document.getElementById("animPanel");
@@ -675,13 +683,100 @@ const stopAuto = () => {
   updateAutoButton(false);
 };
 
-const scheduleNextAuto = (runId, immediate = false) => {
+const renderAnimationButtons = (files) => {
+  if (!listEl) return;
+  const unique = [];
+  const seen = new Set();
+  for (const item of files) {
+    if (!item?.file) continue;
+    if (seen.has(item.file)) continue;
+    seen.add(item.file);
+    unique.push(item);
+  }
+  const base = [
+    { file: "__AUTO__", label: "Auto", auto: true },
+    { file: "__TPOSE__", label: "T-Pose" },
+  ];
+  const merged = base.concat(
+    unique.filter(
+      (item) => item.file !== "__AUTO__" && item.file !== "__TPOSE__"
+    )
+  );
+  listEl.innerHTML = "";
+  for (const item of merged) {
+    const btn = document.createElement("button");
+    btn.className = `anim-btn${item.auto ? " is-auto" : ""}`;
+    btn.setAttribute("data-anim", item.file);
+    btn.type = "button";
+    btn.textContent = item.label || item.file;
+    listEl.appendChild(btn);
+  }
+};
+
+const fetchAnimationManifest = async () => {
+  const response = await fetch("./animation/manifest.json", { cache: "no-store" });
+  if (!response.ok) return null;
+  const data = await response.json();
+  if (!Array.isArray(data)) return null;
+  return data
+    .map((item) => {
+      if (typeof item === "string") {
+        return { file: item, label: item.replace(/\.fbx$/i, "") };
+      }
+      if (item && typeof item.file === "string") {
+        return { file: item.file, label: item.label || item.file.replace(/\.fbx$/i, "") };
+      }
+      return null;
+    })
+    .filter(Boolean);
+};
+
+const fetchAnimationDirectory = async () => {
+  const response = await fetch("./animation/", { cache: "no-store" });
+  if (!response.ok) return null;
+  const text = await response.text();
+  const matches = Array.from(text.matchAll(/href="([^"]+\.fbx)"/gi));
+  if (!matches.length) return null;
+  const files = matches
+    .map((match) => decodeURIComponent(match[1].split("/").pop() || ""))
+    .filter(Boolean);
+  return files.map((file) => ({ file, label: file.replace(/\.fbx$/i, "") }));
+};
+
+const syncAnimationList = async () => {
+  if (!listEl) return;
+  const fallback = getStaticButtons();
+  try {
+    const manifest = await fetchAnimationManifest();
+    if (manifest && manifest.length) {
+      renderAnimationButtons(manifest);
+      autoPool = buildAutoPool();
+      return;
+    }
+  } catch {
+    // ignore manifest errors
+  }
+  try {
+    const dirList = await fetchAnimationDirectory();
+    if (dirList && dirList.length) {
+      renderAnimationButtons(dirList);
+      autoPool = buildAutoPool();
+      return;
+    }
+  } catch {
+    // ignore directory errors
+  }
+  renderAnimationButtons(fallback);
+  autoPool = buildAutoPool();
+};
+
+const scheduleNextAuto = (runId, delayMs = 4000) => {
   if (!autoMode || runId !== autoRunId) return;
   if (autoTimer) {
     clearTimeout(autoTimer);
     autoTimer = null;
   }
-  const delay = immediate ? 100 : 250 + Math.random() * 450;
+  const delay = Math.max(200, delayMs);
   autoTimer = setTimeout(() => {
     if (!autoMode || runId !== autoRunId) return;
     const next = pickAutoFile();
