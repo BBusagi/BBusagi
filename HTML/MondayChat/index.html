@@ -26,6 +26,23 @@
         <button class="menu-btn" id="saveOffsetBtn" type="button">保存当前位置</button>
         <div class="menu-readout" id="offsetReadout">offset: (0, 0, 0)</div>
       </div>
+
+      <div class="menu-divider">PAD 调试</div>
+      <div class="pad-sliders">
+        <div class="pad-slider-row">
+          <label class="pad-label">P <span id="padPVal">0.00</span></label>
+          <input type="range" class="pad-range" id="padP" min="-1" max="1" step="0.05" value="0" />
+        </div>
+        <div class="pad-slider-row">
+          <label class="pad-label">A <span id="padAVal">0.00</span></label>
+          <input type="range" class="pad-range" id="padA" min="-1" max="1" step="0.05" value="0" />
+        </div>
+        <div class="pad-slider-row">
+          <label class="pad-label">D <span id="padDVal">0.00</span></label>
+          <input type="range" class="pad-range" id="padD" min="-1" max="1" step="0.05" value="0" />
+        </div>
+        <button class="menu-btn" id="padResetBtn" type="button">重置 PAD</button>
+      </div>
     </aside>
 
     <div class="vrm-stage" aria-hidden="true">

@@ -41,6 +41,111 @@ def build_user_prompt(message, history, summary):
     )
 
 
+def build_mood_context(pad, mood):
+    """将当前PAD情绪状态翻译为中文风格指令，追加到system prompt尾部。
+    中性状态时返回空字符串（不影响基础人格）。"""
+    P_WARM = [
+        "语气略微轻快一些，回应可以稍微放开。",
+        "今晚状态不错，话可以稍多一点。",
+        "可以比平时多说半句。",
+    ]
+    P_COLD = [
+        "回应更简短，语气收紧，不要多解释。",
+        "今晚话不多，点到为止。",
+        "少说，能省则省，语气平淡。",
+    ]
+    A_TENSE = [
+        "节奏稍快，句子简练，不拖。",
+        "语气带一点暗劲，不拖泥带水。",
+        "说话干脆，不绕弯。",
+    ]
+    A_CALM = [
+        "节奏放慢，语气沉稳，不急。",
+        "说话慢条斯理，可以停顿。",
+        "今晚状态很平，说话不紧不慢。",
+    ]
+    D_GUARDED = [
+        "对方语气强硬，你不需要迎合，保持自己的节奏。",
+        "不用降低姿态，该怎样就怎样。",
+        "不被催，不被压，按自己的步调回应。",
+    ]
+    D_YIELDING = [
+        "对方比较客气，可以稍微放松一点。",
+        "今晚这位客人还不错，态度可以略微温和。",
+    ]
+    MOOD_OVERRIDE = [
+        "这一晚不想多说，能沉默就沉默，开口也不超过两句。",
+        "回应降到最低限度，不主动展开任何话题。",
+    ]
+
+    clauses = []
+
+    # MOOD极端低值优先覆盖P维度
+    if mood <= -1.0:
+        clauses.append(random.choice(MOOD_OVERRIDE))
+    else:
+        if pad["P"] >= 0.35:
+            clauses.append(random.choice(P_WARM))
+        elif pad["P"] <= -0.35:
+            clauses.append(random.choice(P_COLD))
+
+    # A维度独立判断
+    if pad["A"] >= 0.40:
+        clauses.append(random.choice(A_TENSE))
+    elif pad["A"] <= -0.25:
+        clauses.append(random.choice(A_CALM))
+
+    # D维度独立判断
+    if pad["D"] >= 0.30:
+        clauses.append(random.choice(D_GUARDED))
+    elif pad["D"] <= -0.30:
+        clauses.append(random.choice(D_YIELDING))
+
+    if not clauses:
+        return ""  # 中性状态，不干预
+
+    lines = ["当前状态参考（仅影响本次回应风格，不要提及）："]
+    for c in clauses:
+        lines.append(f"- {c}")
+    return "\n".join(lines)
+
+
+def pick_response_mode(pad, clear_req, mood):
+    """随机选择本轮的对话风格提示，注入到 user_prompt 末尾。
+    返回提示字符串；直接回应模式时返回空字符串。"""
+    weights = {"direct": 0.50, "question": 0.20, "observe": 0.15, "redirect": 0.15}
+
+    if clear_req:
+        weights["direct"] += 0.15
+        weights["question"] -= 0.05
+        weights["observe"] -= 0.05
+        weights["redirect"] -= 0.05
+
+    if pad["P"] < -0.3:
+        weights["direct"] -= 0.1
+        weights["redirect"] += 0.1
+
+    if pad["A"] > 0.4:
+        weights["direct"] -= 0.1
+        weights["question"] += 0.1
+
+    MODE_HINTS = {
+        "direct": "",
+        "question": "以问题收尾——说说你自己真正想问的，不是为了让对话继续，是真的想知道。",
+        "observe": "说一个你自己注意到的东西，可以和对方说的有关，也可以无关。",
+        "redirect": "接住对方的话，但带去你觉得更值得谈的方向。",
+    }
+
+    total = sum(weights.values())
+    roll = random.random() * total
+    cumulative = 0.0
+    for mode, weight in weights.items():
+        cumulative += weight
+        if roll < cumulative:
+            return MODE_HINTS[mode]
+    return ""
+
+
 def call_openai(system_prompt, user_prompt):
     api_key = os.environ.get("OPENAI_API_KEY", "").strip()
     if not api_key:
@@ -135,6 +240,22 @@ class Handler(BaseHTTPRequestHandler):
         self.send_error(404)
 
     def do_POST(self):
+        global PAD, MOOD, STATE, NORMAL_STREAK, LAST_REPLY_TS
+
+        if self.path == "/api/pad":
+            length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(length).decode("utf-8")
+            try:
+                payload = json.loads(body)
+            except json.JSONDecodeError:
+                return self._send_json(400, {"error": "无效 JSON"})
+            for key in ("P", "A", "D"):
+                if key in payload:
+                    PAD[key] = max(-1.0, min(1.0, float(payload[key])))
+            if "mood" in payload:
+                MOOD = max(-2.0, min(2.0, float(payload["mood"])))
+            return self._send_json(200, {"pad": PAD, "mood": round(MOOD, 2)})
+
         if self.path != "/api/chat":
             self.send_error(404)
             return
@@ -152,8 +273,6 @@ class Handler(BaseHTTPRequestHandler):
 
         if not message:
             return self._send_json(400, {"error": "消息为空"})
-
-        global MOOD, STATE, NORMAL_STREAK, LAST_REPLY_TS
 
         def has_clear_request(text):
             markers = ["?", "？", "请", "能否", "可以", "帮我", "如何", "怎么", "需要", "想要"]
@@ -310,8 +429,14 @@ class Handler(BaseHTTPRequestHandler):
             })
 
         user_prompt = build_user_prompt(message, history, summary)
+        mode_hint = pick_response_mode(PAD, clear_req, MOOD)
+        if mode_hint:
+            user_prompt += f"\n[本次：{mode_hint}]\n"
         try:
-            reply = call_openai(load_system_prompt(), user_prompt)
+            base_sys = load_system_prompt()
+            mood_ctx = build_mood_context(PAD, MOOD)
+            composed_sys = base_sys + "\n\n" + mood_ctx if mood_ctx else base_sys
+            reply = call_openai(composed_sys, user_prompt)
         except Exception as exc:
             return self._send_json(500, {"error": str(exc)})
 
