@@ -186,6 +186,72 @@ body {
   color: var(--ink-3);
 }
 
+.menu-divider {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(56, 242, 255, 0.12);
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--ink-3);
+}
+
+.pad-sliders {
+  display: grid;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.pad-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pad-label {
+  font-size: 11px;
+  color: var(--ink-2);
+  letter-spacing: 1px;
+  width: 52px;
+  flex-shrink: 0;
+}
+
+.pad-label span {
+  color: var(--neon-1);
+  font-variant-numeric: tabular-nums;
+}
+
+.pad-range {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(56, 242, 255, 0.15);
+  outline: none;
+  cursor: pointer;
+}
+
+.pad-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--neon-1);
+  box-shadow: 0 0 6px var(--neon-1);
+  cursor: pointer;
+}
+
+.pad-range::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: none;
+  border-radius: 50%;
+  background: var(--neon-1);
+  box-shadow: 0 0 6px var(--neon-1);
+  cursor: pointer;
+}
+
 .zoom-readout {
   position: absolute;
   left: 18px;
