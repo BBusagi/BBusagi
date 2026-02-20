@@ -1,0 +1,56 @@
+{
+  "provider": {
+    "name": "Dota 2",
+    "appid": 570,
+    "version": 47,
+    "timestamp": 1700000000
+  },
+  "map": {
+    "matchid": "mock_001",
+    "game_time": 320,
+    "clock_time": 320,
+    "daytime": true,
+    "game_state": "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS",
+    "win_team": "none",
+    "roshan_state": "alive",
+    "roshan_state_end_seconds": 0
+  },
+  "player": {
+    "steamid": "76561198000000000",
+    "team_name": "radiant",
+    "gold": 1850,
+    "gold_reliable": 600,
+    "gold_unreliable": 1250,
+    "gpm": 320,
+    "xpm": 450,
+    "level": 6,
+    "kills": 1,
+    "deaths": 0,
+    "assists": 2,
+    "last_hits": 42,
+    "denies": 5
+  },
+  "hero": {
+    "id": 1,
+    "name": "npc_dota_hero_antimage",
+    "level": 6,
+    "alive": true,
+    "respawn_seconds": 0,
+    "buyback_cost": 200,
+    "buyback_cooldown": 0,
+    "health": 680,
+    "max_health": 760,
+    "health_percent": 89,
+    "mana": 195,
+    "max_mana": 338,
+    "mana_percent": 57
+  },
+  "items": {
+    "slot0": { "name": "item_quelling_blade" },
+    "slot1": { "name": "item_wraith_band" },
+    "slot2": { "name": "item_boots" },
+    "slot3": { "name": "item_empty" },
+    "slot4": { "name": "item_empty" },
+    "slot5": { "name": "item_empty" }
+  }
+}

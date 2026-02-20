@@ -1,0 +1,13 @@
+{
+  "name": "dota2-coach",
+  "version": "0.1.0",
+  "description": "Dota 2 AI Coach - GSI Receiver",
+  "main": "src/gsi-server.js",
+  "scripts": {
+    "start": "node src/gsi-server.js",
+    "start:verbose": "node src/gsi-server.js --verbose"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
