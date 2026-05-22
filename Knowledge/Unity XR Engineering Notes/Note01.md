@@ -244,7 +244,7 @@ Simply put, All-in-One is more like a complete package set provided by Meta, whi
 
 Many new projects now tend toward:
 
-> `OpenXR + Meta Core SDK + feature modules as needed`
+**`OpenXR + Meta Core SDK + feature modules as needed`**
 
 instead of importing the full Oculus Integration or a large All-in-One package by default.
 

@@ -128,9 +128,7 @@ Interaction 交互层
 
 这里最重要的是：
 
-很多新人会把这些东西全部当成：
-
-`“XR SDK”`
+很多新人会把这些东西全部当成：***“XR SDK”`***
 
 但其实它们职责完全不同。
 
@@ -242,7 +240,7 @@ Platform SDK 是 XR Plugin 之上的平台能力层。
 
 很多新项目现在其实会逐渐倾向：
 
-> `OpenXR + Meta Core SDK + 按需功能模块`
+**`OpenXR + Meta Core SDK + 按需功能模块`**
 
 而不是过去那种一次性导入完整 Oculus Integration 或大型 All-in-One 包的方式。
 
