@@ -1,43 +1,33 @@
-## Hello World 👋
-+ Title
-  + XR Engineer
-  + Interaction / Gameplay Developer
-  + AI × 3D Application Developer
-  + Multilingual Developer
+## Hello World
 
-+ Focus
-  + Spatial Computing, Virtual Reality, Augmented Reality
-  + Frontend & Interaction Systems
-  + AI and XR Integration
-  + Robotics Interaction, Digital Twin
-  + Economic/Data Visualization, Automated SNS Content Generation, AI-Assisted Language Learning
+I am a Software Engineer focused on XR platforms, realtime 3D systems, and interactive spatial applications.
 
-+ Programming Languages
-  + C# (Unity, .NET)
-  + C++ (Unreal)
-  + Python (AI, data processing, tooling)
-  + JavaScript (Web, Three.js)
-  + Shell scripting, Batch, PowerShell (automation, daily use)
+My work often involves low-latency realtime interaction systems, cross-platform integration, complex compatibility issues, and SDK upgrade / migration problems.
 
-+ Tools & Libraries
-  + Version Control: Git, Fork, GitHub, Azure DevOps
-  + XR & Interaction: Unity (MRTK, Photon, XRI, OpenXR, AVPro, UniTask, UniRX)
-  + Visualization: Three.js
-  + AI/ML: Hugging Face Transformers, rinna GPT-2, LoRA/Fine-tuning, OpenAI API, CUDA
-  + Embedded & IoT: Arduino, ESP32, Raspberry Pi
-  + Environments/Platforms: Windows, iOS, Android (Meta Quest), Linux, Arduino IDE
-  + Project/Workflow: Microsoft Teams, Slack, Notion, Miro
+## Focus
 
+- XR engineering: Virtual Reality, Mixed Reality, Spatial Computing
+- XR platform development: runtime integration, platform SDKs, cross-platform compatibility
+- Realtime 3D systems: interaction loops, rendering pipelines, low-latency application behavior
+- Interaction systems: XRI, MRTK, hand/controller interaction, gameplay interaction
+- 3D Gaussian Splatting: realtime 3D reconstruction, visualization, and XR/web integration
+- AI x 3D applications: AI-assisted tools, language learning, visualization, content workflows
+
+## Technical Stack
+
+- Languages: C# / C++ / Python / Shell
+- XR and Unity: Unity(MRTK, Photon, AVPro, UniTask, UniRx), Unreal
+- 3D and Web: Three.js, 3D Gaussian Splatting
+- AI / ML: OpenAI API, Hugging Face Transformers, LoRA / fine-tuning, CUDA
+- Embedded / IoT: Linux, Arduino, ESP32, Raspberry Pi
+- Workflow: Git, GitHub, Azure DevOps, Fork, Notion, Miro, Slack, Microsoft Teams
+
+## Engineering Notes
+
+- [Unity XR Engineering Notes](Knowledge/Unity%20XR%20Engineering%20Notes/README.md)  
+  A practical note series about Unity XR architecture and project maintenance.
+  - [Unity XR Technology Stack Overview](Knowledge/Unity%20XR%20Engineering%20Notes/Note01.md) - [中文版本](Knowledge/Unity%20XR%20Engineering%20Notes/Note01_zh.md)
 
 <!--
-**BBusagi/BBusagi** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
-Here are some ideas to get you started:
-- 🔭 I’m currently working on ...
-- 🌱 I’m currently learning ...
-- 👯 I’m looking to collaborate on ...
-- 🤔 I’m looking for help with ...
-- 💬 Ask me about ...
-- 📫 How to reach me: ...
-- 😄 Pronouns: ...
-- ⚡ Fun fact: ...
+**BBusagi/BBusagi** is a special repository because its README.md appears on your GitHub profile.
 -->
