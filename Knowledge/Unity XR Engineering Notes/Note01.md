@@ -97,16 +97,16 @@ Understanding system structure and layer boundaries is also a common step in eng
 
 Once I started thinking in layers, the whole XR ecosystem became much clearer.
 
-At a high level, the stack can be split like this:
+At a high level, the stack can be split like this. In this note, diagrams are written from top to bottom: application-level code at the top, device/runtime foundations at the bottom. The detailed sections below still explain the stack from lower layers upward, because that is easier for understanding the foundation first.
 
 | Layer | Typical Examples | Main Responsibility |
 | --- | --- | --- |
-| Hardware Device Layer | Quest, Vision Pro, Pico, HoloLens | Display, sensors, controllers, cameras, tracking hardware |
-| Runtime Layer | Meta Runtime, SteamVR Runtime | Device tracking, rendering submission, spatial system, runtime environment |
-| Unity XR Plugin Layer | OpenXR Plugin, Oculus XR Plugin, XR Plugin Management | Connect Unity XR subsystems to a concrete runtime |
-| Platform SDK Layer | Meta Core SDK, All-in-One, MR Utility Kit | Platform-specific capabilities such as Passthrough, Anchors, Scene API |
-| Interaction Layer | XRI, MRTK2, MRTK3, Meta Interaction SDK | Ray, grab, teleport, UI, controller and hand interaction |
 | Application Layer | Games, industrial systems, XR applications | Business logic, scene content, product experience |
+| Interaction Layer | XRI, MRTK2, MRTK3, Meta Interaction SDK | Ray, grab, teleport, UI, controller and hand interaction |
+| Platform SDK Layer | Meta Core SDK, All-in-One, MR Utility Kit | Platform-specific capabilities such as Passthrough, Anchors, Scene API |
+| Unity XR Plugin Layer | OpenXR Plugin, Oculus XR Plugin, XR Plugin Management | Connect Unity XR subsystems to a concrete runtime |
+| Runtime Layer | Meta Runtime, SteamVR Runtime | Device tracking, rendering submission, spatial system, runtime environment |
+| Hardware Device Layer | Quest, Vision Pro, Pico, HoloLens | Display, sensors, controllers, cameras, tracking hardware |
 
 The relationship between Platform SDK and Interaction is especially important.
 
@@ -115,17 +115,17 @@ From my engineering experience, Platform SDK is the platform capability layer ab
 If we describe it strictly by layers, it looks like this:
 
 ```text
-Hardware Device Layer
-  ↓
-Runtime Layer
-  ↓
-Unity XR Plugin Layer
-  ↓
-Platform SDK Layer
+Application Layer
   ↓
 Interaction Layer
   ↓
-Application Layer
+Platform SDK Layer
+  ↓
+Unity XR Plugin Layer
+  ↓
+Runtime Layer
+  ↓
+Hardware Device Layer
 ```
 
 Or more precisely, Interaction is like layer 4.5 / layer 5: it sits above platform capabilities and directly serves the application layer.
@@ -142,9 +142,11 @@ These are real devices, but Unity does not communicate directly with the device 
 
 ### 2. Runtime Layer
 
-A runtime can be understood as "device driver + XR runtime environment".
+A runtime is the device/platform-side XR execution environment.
 
-Examples include Meta Runtime, SteamVR Runtime or Meta Quest Link.
+It is not a Unity package. It is closer to the system layer that owns device tracking, frame timing, rendering submission, compositor behavior, device state, and spatial runtime services.
+
+Examples include Meta Runtime, SteamVR Runtime, and Windows Mixed Reality Runtime.
 
 Unity does not talk directly to Quest. The relationship is more like this:
 
@@ -153,27 +155,16 @@ Unity Application
     ↓
 Unity OpenXR Plugin / Oculus XR Plugin
     ↓
-Meta OpenXR Runtime
+Meta Runtime
     ↓
 Quest OS / Tracking / Device
 ```
 
-When you enable OpenXR Plugin in Unity, it does not mean Quest stops using Meta Runtime.
+The important point is that the runtime is below Unity's XR Plugin layer.
 
-On Quest, there is still one runtime system: Meta's runtime.
+On Quest, enabling OpenXR Plugin in Unity does not mean Quest stops using Meta Runtime. The Unity-side plugin changes the access path, but the device still runs through Meta's runtime system.
 
-The difference is:
-
-| Plugin | Access Path | Better Fit |
-| --- | --- | --- |
-| Oculus XR Plugin | Accesses the runtime more through Meta private interfaces | Older Quest projects deeply tied to Oculus Integration / OVRInput |
-| OpenXR Plugin | Accesses the same runtime through the OpenXR standard interface | New projects, multi-platform projects, projects that want less vendor lock-in |
-
-So there are not two runtimes running side by side. The same runtime exposes both private interfaces and OpenXR interfaces.
-
-Unity OpenXR Plugin is responsible for connecting Unity XR systems to the OpenXR runtime interface.
-
-This is why even if your Unity project uses OpenXR, the final runtime path still goes through Meta Runtime and Quest's lower-level tracking, rendering, and device systems.
+This is why even if your Unity project uses OpenXR, the final runtime behavior still depends on Meta Runtime and Quest's lower-level tracking, rendering, and device systems.
 
 It is also why project behavior can change after a Quest Runtime update, even if you did not change your Unity project.
 
@@ -185,7 +176,15 @@ This is the layer many developers first encounter directly.
 
 Examples include XR Plugin Management, OpenXR Plugin, and Oculus XR Plugin.
 
-Their job is to let Unity connect to the runtime.
+This layer is on the Unity side. Its job is to let Unity connect to the runtime.
+
+More concretely, the Unity XR Plugin layer is responsible for:
+
+- Selecting and loading the correct XR backend.
+- Starting and stopping Unity XR subsystems.
+- Connecting Unity rendering, input, tracking, and lifecycle hooks to the runtime.
+- Exposing runtime features to Unity through package settings and feature flags.
+- Translating Unity-side concepts into runtime-facing API calls.
 
 The most confusing part of this layer is the relationship between Oculus XR Plugin and OpenXR Plugin.
 
@@ -193,14 +192,16 @@ Historically, Oculus XR was more of Meta's private solution. OpenXR came later a
 
 In short:
 
-| Direction | Characteristics |
-| --- | --- |
-| Oculus XR | More vendor-ecosystem oriented. Can access some Meta-specific capabilities earlier |
-| OpenXR | More standard and cross-platform. Better for long-term maintenance and multi-device compatibility |
+| Unity Plugin | Access Path | Better Fit |
+| --- | --- | --- |
+| Oculus XR Plugin | Connects Unity to Meta Runtime through more Meta-specific paths | Older Quest projects deeply tied to Oculus Integration / OVRInput |
+| OpenXR Plugin | Connects Unity to an OpenXR runtime through the OpenXR standard interface | New projects, multi-platform projects, projects that want less vendor lock-in |
 
-On Quest, both plugins can often work because both eventually connect to Meta Runtime.
+On Quest, both plugins can often work because both ultimately connect to Meta Runtime.
 
-But they are not equivalent. Oculus XR Plugin is more tied to Meta's private ecosystem, while OpenXR Plugin is more standard and cross-platform. Some Meta-specific capabilities may require OpenXR Extensions or additional Meta SDK packages.
+This does not mean there are two runtimes running side by side. It means the same runtime can expose different access paths: Meta-specific interfaces and OpenXR interfaces.
+
+The plugins are not equivalent. Oculus XR Plugin is more tied to Meta's private ecosystem, while OpenXR Plugin is more standard and cross-platform. Some Meta-specific capabilities may require OpenXR Extensions or additional Meta SDK packages.
 
 For Quest projects, old projects often make more sense staying on Oculus Plugin. New projects are usually better candidates for gradually moving toward OpenXR.
 
@@ -214,11 +215,11 @@ Many people mistakenly think:
 
 But OpenXR is closer to a standard interface.
 
-Unity's OpenXR Plugin is Unity's implementation of OpenXR integration.
+Unity's OpenXR Plugin is Unity's package for connecting Unity to an OpenXR runtime.
 
 For this first note, the main thing to remember is:
 
-XR Plugin is not an ordinary feature package. It is the bridge between Unity Engine and the XR Runtime.
+XR Plugin is not the runtime itself. It is the Unity-side bridge between Unity Engine and the XR Runtime.
 
 ### 4. Platform SDK Layer
 
