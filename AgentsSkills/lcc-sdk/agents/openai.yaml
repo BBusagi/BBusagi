@@ -1,0 +1,4 @@
+interface:
+  display_name: "LCC SDK"
+  short_description: "LCC SDK integration and debugging"
+  default_prompt: "Use $lcc-sdk to inspect or implement LCC SDK loading, transform, bounds, or rendering behavior."
