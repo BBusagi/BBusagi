@@ -1,0 +1,1 @@
+本skill适用于claude和codex

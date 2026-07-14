@@ -1,6 +1,6 @@
 ---
 name: lcc-sdk
-description: Integrate, debug, or refactor LCC SDK usage in Unity projects, especially WHITEROOM-style loaders built around LCCManager, Renderer.Load, bounds syncing, camera/FOV registration, clipping, collision, or point-cloud/LCC render mode switching. Use when Codex needs to inspect or implement LCC loading flows, renderer lifecycle, transform correction, SDK API calls, local package resolution, or UI/interaction features backed by LCC scenes.
+description: Integrate, debug, or refactor XGrids LCC SDK usage in Unity projects, especially WHITEROOM-style loaders built around LCCManager, LCCCore.Renderer.Load, bounds syncing, camera/FOV registration, streaming vs full rendering, multi-camera (AddCamera) rendering, clipping, collision, or point-cloud/LCC render mode switching. Use when a task needs to inspect or implement LCC loading flows, renderer lifecycle, transform correction, SDK API calls (WRLCCRenderer / LccObject / LccRenderConfig), local package resolution, or diagnosing LCC display problems (blank model, scattered splats, wrong orientation/scale).
 ---
 
 # LCC SDK
@@ -57,6 +57,22 @@ Use this skill to work on Unity-side LCC SDK integration. Keep the skill focused
 - The SDK provides `Load()` and `Dispose()`, not a separate unload API.
 - Repeated `Load()` calls replace the previous rendered scene.
 - On app-side teardown, clear callbacks, dispose the renderer, and remove references from the wrapper object.
+
+## Rendering Modes And Multi-Camera (Critical)
+
+The SDK has two rendering strategies, and mixing streaming with multi-camera setups fails silently — the model renders as a sparse scatter of splats with no exception.
+
+- **Full rendering**: all splats resident; every registered camera projects them correctly. Enabled by `Renderer.SetRenderAll(true)` OR automatically when total splats are below the manager threshold (`SetMaxRenderSplat`, SDK full-render default 15,000,000).
+- **Streaming / block rendering**: splats are streamed on demand for a *single* camera viewpoint. You get this when `SetRenderAll(false)` and the model exceeds the threshold (e.g. `SetMaxRenderSplat(1)` forces streaming for everything).
+
+Single-viewpoint facts that make streaming fragile with extra cameras:
+
+- `LCCManager.SetFOV(...)` sets ONE global projection; the app feeds it the main/first-person camera.
+- `SetMaxSplats()` / `SetMaxDistance()` apply ONLY to streaming/block rendering and select splats by distance/LOD from that viewpoint. A far or top-down camera sits beyond `MaxDistance`, so it receives almost nothing.
+- `SetMaxRenderSplat()` is global — it affects EVERY scene on the manager.
+- The MainCamera-tagged camera is auto-registered; `AddCamera()` is only for EXTRA cameras. Do not manually add/remove the main camera unless proven necessary.
+
+**Observed in WHITEROOM:** forcing streaming (`LccObject` → `WRLCCRenderer.SetForceStreamingModeForRuntimeControls(true)` → `SetRenderAll(false)`, `SetMaxRenderSplat(1)`) while also registering a top-down Maps overview camera via `AddCamera` makes the overview show random scattered splats, because streaming only feeds the main camera's frustum/distance. **Fix:** when a second, differently-positioned camera must see the whole model, use full rendering (don't force streaming). See the gate in `WRLCCRenderer.ResolveCurrentConfig()` keyed off `LccRenderConfig.RenderOnMapPlayerCamera`.
 
 ## Common Task Patterns
 

@@ -1,0 +1,3 @@
+全局位置
+C:\Users\Username\.codex
+C:\Users\Username\.claude
