@@ -55,4 +55,5 @@
   + scanning/lexing(token)
   + parsing(AST,syntax)
   + static analysis(type, scope)
++ store place: attributes, symbol table, new data structure
 => 
