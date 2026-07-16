@@ -1,0 +1,23 @@
+### Transistor（晶体管）
+- 由电信号控制的高速电子开关
+- 晶体管可以组成逻辑门
+
+### Adder 是 ALU 的组成部分
+1. Full Adder / 1-bit 全加器
+- 输入：A、B、CarryIn
+- 输出：Sum、CarryOut
+- 计算 A + B + CarryIn
+
+2. Full Adder × 4 = 4-bit Adder
+4-bit Adder
+- 9bit输入：A[3:0]、B[3:0]、CarryIn
+- 5bit输出：Sum[3:0]、CarryOut
+
+### ALU
+- 支持加、减、AND、OR 等多种操作
+- 使用控制信号选择操作
+- 7bit输出：
+  Result[3:0]
+  Carry
+  Zero
+  Overflow

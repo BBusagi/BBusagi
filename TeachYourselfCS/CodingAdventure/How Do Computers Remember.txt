@@ -1,0 +1,61 @@
+### 基本 CPU 数据流
+寄存器 → ALU → MUX → 寄存器
+
+ALU：计算新状态
+MUX：选择新值还是旧值
+寄存器：保存状态
+Clock：决定状态更新时刻
+
+### 1bit
+SR latch
+   ↓
+D latch
+   ↓
+D flip-flop
+
+1. SR latch
+- 最基础的 1-bit 记忆电路
+- 通过反馈保持状态
+- 有 Set 和 Reset 输入
+
+2. D latch
+- 可以保存 1 bit
+- 输入：Data、Enable
+- Enable 有效期间，Q 跟随 D
+- 属于电平敏感存储单元
+
+3. D flip-flop
+- 可以保存 1 bit
+- 输入：Data、Clock
+- 只在 Clock 边沿保存 Data
+- 属于边沿触发存储单元
+
+4. 1-bit register
+- MUX + D flip-flop
+- 输入：Data、Store、Clock
+- Store = 1：保存新 Data
+- Store = 0：保持旧 Q
+
+### 多bit
+D flip-flop x1 = 1-bit register
+D flip-flop x4 = 4-bit register
+
+MUX + D flip-flop → 1-bit register
+1-bit register × 4 → 可控制写入的 4-bit register
+
+1. Multiplexer（MUX）
+- 根据选择信号，从多个输入中选择一个输出
+- 在寄存器中用于选择：
+     新 Data 或旧 Q
+
+2. ALU
+- 算术逻辑计算单元
+- 属于组合逻辑
+- 负责根据输入计算结果
+- 自身通常不保存结果
+
+3. 4-bit register
+- 由 4 个 1-bit register 并联组成
+- 共享 Store 和 Clock
+- 一次保存 4 bit
+
