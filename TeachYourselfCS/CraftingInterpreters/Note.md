@@ -6,7 +6,7 @@
   3. The Lox Language (Expressions and Statements
 
 - Part II. A Tree-Walk Interpreter
-  1.  Scanning (Implicit Semicolons
+  1. Scanning (Implicit Semicolons
   2. Representing Code
   3. Parsing Expressions (Logic Versus History
   4. Evaluating Expressions (Static and Dynamic Typing
@@ -51,9 +51,28 @@
 
 ### A Map of the Territory
 + front - middle - back
+> 理解 - 整理与优化 - 生成或执行
 + Front End:
   + scanning/lexing(token)
   + parsing(AST,syntax)
   + static analysis(type, scope)
 + store place: attributes, symbol table, new data structure
++ Middle End:
+  + IR - intermediate representation
+  + GNU Compiler Collection 
+  + Optimization(constant folding)
++ Back End:
+  + code generation - native / virtual machine code
+  + bytecode & VM
+  + Runtime
++ Shortcuts
+  + AOT - ahead of time 原生编译
+  + single-pass compiler
+  + tree-walk interpreter
+  + transpiler
+  + just-in-time compilation
++ Compilers & Interpreters
+  + 编译器是将代码转化为另外一种不可执行代码
+  + 解释器是着将代码需要为可执行代码
+
 => 
