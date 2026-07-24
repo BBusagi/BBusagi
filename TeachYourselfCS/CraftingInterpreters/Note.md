@@ -41,6 +41,10 @@
   2. Appendix II: Generated Syntax Tree Classes
 
 ## Book
++ 虽然叫解释器，但是会涉及到编译器和解释器
++ 会带你做两个东西
+  1. 纯解释器
+  2. 编译器+虚拟机
 ### Introduction
 + 什么是Interpreters？Compiler的区别是什么？
 + 本书涉及到两种语言，JAVA和C
@@ -72,7 +76,9 @@
   + transpiler
   + just-in-time compilation
 + Compilers & Interpreters
-  + 编译器是将代码转化为另外一种不可执行代码
-  + 解释器是着将代码需要为可执行代码
+  + 编译器是将代码转化为另一种代码，但是不执行
+  + 解释器是着将代码转化为可执行代码
+  + 两者关系类比于“蔬菜”和“水果”，不是互斥条件，允许共存
+  + 
 
 => 
